@@ -4,9 +4,19 @@
 
 The purpose of this project is software preservation, study of mid-2000s mobile game architectures, and understanding the mathematics and graphics rendering behind early mobile physics and stacking games.
 
+## Preview
+
+![ss](preview/1.png)
+![ss](preview/2.png)
+![ss](preview/3.png)
+![ss](preview/4.png)
+![ss](preview/5.png)
+![ss](preview/6.png)
+![ss](preview/7.png)
+
 ---
 
-## ⚠️ Legal & Educational Disclaimer
+## Legal & Educational Disclaimer
 
 > [!IMPORTANT]
 > **This project is created strictly for non-commercial, educational, historical preservation, and research purposes.**
