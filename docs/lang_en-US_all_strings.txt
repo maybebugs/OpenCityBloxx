@@ -1,0 +1,94 @@
+0	Your goal is to create a Megalopolis. To reach that goal, build towers and place them wisely on the city map. Increasing your city's population and level unlocks new building types. You can see the current city level and population at the top of the screen. In the top right corner is the population of the tower you have just built and the tower it's going to replace.\n\nWhen you are building a tower, your aim is to reach a target height. The target height is shown in the lower left corner. The better you place the roof, the bigger your bonus. You have 3 chances to finish the tower, if you fail, the building can be placed in the city without the roof.\n\nAfter finishing a tower, you can choose a location on one of the flashing tiles on the city map and place the tower with key %U. Old buildings can be replaced with new ones. An unwanted tower can be destroyed in the demolishing lot on the left.
+1	Build the highest and most stable building possible.\n\nAt the bottom you can see the current height of the building, the number of tries you have left, and the current population of the building.\n\nPress key %U to drop the block. The higher your building, the more people you get for each placed block. The number of people also depends on how well the block is placed.\n\nCentering a block perfectly on top of another fills the combo meter. Placing more blocks before the meter empties adds to the combo, and perfect drops refill the meter. Every block placed while a combo is active increases the combo score. The combo score is added to the population score when the combo ends.
+2	Starting a new game may end your current game. Are you sure?
+3	Now it's time to do some serious thinking and reach for the ultimate goal: to create a city of %U people.
+4	You've bought yourself a piece of land to fulfill your dream of building a thriving metropolis.
+5	Your investors have supplied a crane and building materials for you to create Residential towers.
+6	The comparison icons at the top right corner of the screen show how many people you have in your new building and the building you are about to replace.
+7	Press key %U to select the blue Residential tower on the left.
+8	First milestone reached! More than %U citizens have settled in your city.
+9	The orange horizontal line above the city map shows how many people you need for the next city level.
+10	More than %U citizens have moved in! Your city has received a lot of recognition in the national news.
+11	More than %U citizens have settled in! Your city has been voted as the greatest place to live in a national poll.
+12	The people of your city have built a statue in your honor. Congratulations!
+13	Congratulations! Your city has reached the final level due to your amazing construction and management skills. Thank you for playing!
+14	Tax money flows in and you can now afford a new tower type! Use keys %0U and %1U to select between blue Residential towers and red Commercial towers.
+15	Buildings have specific rules as to where they can be placed. Red towers may only be placed next to blue towers. The flashing tiles show where they can be placed.
+16	You can now afford green Office towers! A green tower needs to have a red and a blue neighbor.
+17	Congratulations! You can now afford the tallest building. The yellow Luxury towers require a red, blue and green neighbor before they can be placed.
+18	The meter on top shows the current city population. Your main goal is to build as crowded a city as possible through the 20 milestones. Check your progress by looking at the milestone counter on the upper left corner.
+19	Place the tower anywhere on the map. Move the tower with keys %0U, %1U, %2U, %3U and place it with key %4U.
+20	Special roofs for %U are available. You get the special roof if you build the tower well enough.
+21	Press key %0U to drop the apartments. You're allowed %1U misses before the construction is canceled. The better you build, the more people will move in. Good luck!
+22	Excellent! You've built with such skill that this tower is awarded a trophy roof. A trophy roof gives a population bonus for the tower it covers.
+23	Build a tower with as many occupants as possible. Press key %0U to drop the apartment blocks. Only %1U misses allowed.
+24	You started a combo by centering a block precisely on the one below it. As long as the combo meter at the top stays active you get more people for each placed block. Precise drops refill the combo meter.
+25	Starting a new game erases your current game and resets the progress and population score in your city. Proceed?
+26	Starting a new game erases your current game. Proceed?
+27	Old buildings can be replaced with new ones. An unwanted tower can be destroyed in the demolishing lot on the left.
+28	Reset city
+29	Reset Quick game
+30	City Bloxx
+31	Back
+32	Cancel
+33	Clear
+34	Exit
+35	High scores
+36	Instructions
+37	Menu
+38	No
+39	OK
+40	New game
+41	Continue Build city
+42	Continue Quick game
+43	Select
+44	Yes
+45	Height
+46	All-time high:
+47	Name
+48	Population
+49	Tower height
+50	Press key %U to demolish the current building
+51	Press key %U to place the tower here
+52	You cannot place the tower here
+53	Can be placed anywhere
+54	%0U\nChallenge: population of %1U
+55	Get more than %U citizens to unlock this tower type
+56	No place to build this type of tower
+57	Required neighbors:\nblue and red tower
+58	Population decreased by %U citizens
+59	Population increased by %U citizens
+60	The new building had no effect on overall population
+61	Required neighbor:\nblue tower
+62	Required neighbors:\nblue, red and green tower
+63	Build city
+64	Quick game
+65	Population
+66	All sectors in your %U are full. Citizens arrange a parade for you.
+67	More than %U citizens have moved in
+68	Congratulations! Your %0U is now a %1U.
+69	Your city is now a Tiny town
+70	You ran out of retries before you reached the target height
+71	Tiny town
+72	Small town
+73	Town
+74	Small city
+75	Medium city
+76	Big city
+77	Capital
+78	Metropolis
+79	Megalopolis
+80	Longest combo: %U
+81	Tower height: %U
+82	New record!
+83	Population: %U
+84	Enter name
+85	Commercial tower
+86	Commercial towers
+87	Office tower
+88	Office towers
+89	Luxury tower
+90	Luxury towers
+91	Residential tower
+92	Residential towers
+93	0
