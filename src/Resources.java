@@ -1,25 +1,24 @@
 
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
+import jme.Assets;
 import jme.Image;
 
 /**
  * Resource manager.  (obfuscated name: g)
  *
- * Resource ids are packed ints:
- *   bit 31      : standalone file (file name = decimal of low 15 bits, e.g. "80")
- *   bits 16..30 : archive number (archive file "r<n>"; only "r0" exists in this jar)
- *   bits 0..14  : index into the offset table stored at the head of "r0"
- * Offsets table: 92 ints. Entries [0..90] are resource offsets (negative value for a
- * standalone resource = -length), entry [91 + archive] is the archive size.
+ * Resource ids are the original packed ints; only the low 15 bits identify a resource.
+ * assets/manifest.txt maps that number to a file under assets/ (images, audio, data), so the
+ * old r0 archive and numbered loose files are gone.  Also does the string table lookup.
  */
 public final class Resources {
     private static Resources instance;
-    private static int[] offsets;        // b
+    private static Map<Integer, String> manifest;   // resource id -> asset path
     private static int[] langInts;       // c  (153 ints read from the "l<N>" file)
-    private static int streamPos = -2;   // d  (read position inside archiveStream, -2 = none)
-    private static DataInputStream archiveStream; // e
-    private static String archiveName;   // f
     private static DataInputStream langStream;    // g
 
     private Resources() {
@@ -38,19 +37,22 @@ public final class Resources {
         return result;
     }
 
-    /** Opens the "r0" index and reads the offset table. */
+    /** Loads the resource manifest (assets/manifest.txt: resource id -> file) and the language table. */
     public static void init() {
         if (instance == null) {
             instance = new Resources();
         }
         try {
-            archiveName = "r0";
-            archiveStream = new DataInputStream(instance.getClass().getResourceAsStream(archiveName));
-            offsets = new int[92];
-            for (int i = 0; i < offsets.length; i++) {
-                offsets[i] = archiveStream.readInt();
+            manifest = new HashMap<Integer, String>();
+            BufferedReader r = new BufferedReader(new InputStreamReader(Assets.open("manifest.txt"), "UTF-8"));
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0 || line.charAt(0) == '#') continue;
+                String[] p = line.split("\\s+", 2);
+                if (p.length == 2) manifest.put(Integer.valueOf(p[0]), p[1]);
             }
-            streamPos = offsets.length * 4;
+            r.close();
             langInts = new int[153];
             loadLangFile(Storage.getSetting(2));
             if (getString(152).compareTo("0") == 0) {
@@ -62,70 +64,24 @@ public final class Resources {
         }
     }
 
-    /** Reads the raw bytes of resource 'id' (sequential reads reuse the open stream). */
-    public static byte[] getBytes(int resourceId) {
-        byte[] data = null;
-        if (resourceId != -1) {
-            int archive = (Integer.MAX_VALUE & resourceId) >> 16;
-            try {
-                DataInputStream stream;
-                if (streamPos == -2 || offsets[resourceId & 32767] < streamPos
-                        || !archiveName.equals("r" + archive)
-                        || (resourceId & Integer.MIN_VALUE) != 0) {
-                    if (archiveStream != null) {
-                        archiveStream.close();
-                        archiveStream = null;
-                    }
-                    archiveName = "r" + archive;
-                    stream = openStream(resourceId);
-                } else {
-                    archiveStream.skipBytes(offsets[resourceId & 32767] - streamPos);
-                    stream = archiveStream;
-                }
-                data = new byte[sizeOf(resourceId)];
-                stream.read(data);
-                if ((resourceId & Integer.MIN_VALUE) == 0) {
-                    streamPos = offsets[resourceId & 32767] + data.length;
-                    archiveStream = stream;
-                } else {
-                    streamPos = -2;
-                    stream.close();
-                }
-            } catch (Exception e) {
-            }
-        }
-        return data;
+    /** Asset path (relative to assets/) of resource 'id', or null. */
+    private static String pathOf(int resourceId) {
+        if (resourceId == -1 || manifest == null) return null;
+        return manifest.get(Integer.valueOf(resourceId & 32767));
     }
 
-    /** Opens a stream positioned at the start of resource 'id'. */
+    /** Reads the raw bytes of resource 'id' from the assets folder (null if missing). */
+    public static byte[] getBytes(int resourceId) {
+        String path = pathOf(resourceId);
+        return path == null ? null : Assets.readBytes(path);
+    }
+
+    /** Opens a stream for resource 'id' (null if missing). */
     public static DataInputStream openStream(int resourceId) {
-        if (resourceId != -1) {
-            String resPath;
-            if ((resourceId & Integer.MIN_VALUE) != 0) {
-                int number = resourceId & 32767;
-                resPath = String.valueOf(number);
-            } else {
-                int number = (Integer.MAX_VALUE & resourceId) >> 16;
-                resPath = "r" + number;
-            }
-            try {
-                InputStream is = instance.getClass().getResourceAsStream(resPath);
-                if (is == null) {
-                    streamPos = -2;
-                    return null;
-                }
-                DataInputStream stream = new DataInputStream(is);
-                if ((resourceId & Integer.MIN_VALUE) == 0) {
-                    stream.skipBytes(offsets[resourceId & 32767]);
-                }
-                return stream;
-            } catch (Exception e) {
-                streamPos = -2;
-                return null;
-            }
-        }
-        streamPos = -2;
-        return null;
+        String path = pathOf(resourceId);
+        if (path == null) return null;
+        InputStream is = Assets.open(path);
+        return is == null ? null : new DataInputStream(is);
     }
 
     /**
@@ -473,11 +429,6 @@ public final class Resources {
     /** Unlocks/releases the open streams. */
     public static void close() {
         try {
-            if (archiveStream != null) {
-                streamPos = -2;
-                archiveStream.close();
-                archiveStream = null;
-            }
             if (langStream != null) {
                 langStream.close();
                 langStream = null;
@@ -506,28 +457,10 @@ public final class Resources {
         return str;
     }
 
-    /** Size in bytes of resource 'id'. */
-    private static int sizeOf(int resourceId) {
-        if (resourceId == -1) {
-            return 0;
-        }
-        int index = resourceId & 32767;
-        if ((Integer.MIN_VALUE & resourceId) != 0) {
-            return -offsets[index];
-        }
-        int next = index + 1;
-        while (offsets[next] < 0) {
-            next++;
-        }
-        return (next >= 91 || offsets[next] <= offsets[index])
-                ? offsets[((Integer.MAX_VALUE & resourceId) >> 16) + 91] - offsets[index]
-                : offsets[next] - offsets[index];
-    }
-
     /** Opens file "l<n>" (header: 7 bytes, UTF string, then 153 ints). */
     private static void loadLangFile(int langIndex) {
         try {
-            InputStream is = instance.getClass().getResourceAsStream("l" + langIndex);
+            InputStream is = Assets.open("lang/l" + langIndex);
             if (is != null) {
                 langStream = new DataInputStream(is);
                 langStream.skipBytes(7);

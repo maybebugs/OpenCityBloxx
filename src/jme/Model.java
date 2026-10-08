@@ -1,18 +1,28 @@
 package jme;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.zip.Inflater;
+import javax.imageio.ImageIO;
 
 /**
- * A mesh loaded from an M3G (JSR-184) file, plus the file loader.
- * Only the subset of M3G used by the game is implemented (meshes, vertex buffers,
- * strips, appearances, textures, compositing and polygon modes).
+ * A mesh loaded from a Wavefront OBJ file (assets/models/*.obj) with its MTL + PNG textures.
+ *
+ * The game's models used to be read from a JSR-184 (M3G) file; they were extracted once with
+ * tools/M3gToObj.java and are now plain OBJ assets.  Supported OBJ/MTL subset:
+ *   OBJ: v x y z [r g b], vt s t, f (v, v/vt, v/vt/vn, v//vn; polygons are fan-triangulated;
+ *        negative indices allowed), g / o, usemtl, mtllib, "#@default_color AARRGGBB"
+ *   MTL: newmtl, map_Kd, plus "#@key value" render-state comments written by the extractor:
+ *        blend (ALPHA|REPLACE), alpha_threshold, depth_test, depth_write,
+ *        cull (BACK|FRONT|NONE), winding (CCW|CW), texture_function (REPLACE|MODULATE), clamp
+ * V texture coordinates are stored flipped in OBJ (1 - t) and flipped back here.
+ * The index file assets/models/models.txt maps the game's numeric model ids to OBJ files.
  */
 public final class Model {
     public static final int BLEND_ALPHA = 64, BLEND_REPLACE = 68;
@@ -27,7 +37,7 @@ public final class Model {
 
     /** One drawable part of a mesh. */
     public static final class Sub {
-        public int[] tris;           // index triples (strips already expanded)
+        public int[] tris;           // index triples
         public Tex tex;
         public int blending = BLEND_REPLACE;
         public int alphaThreshold = 0;
@@ -47,310 +57,249 @@ public final class Model {
     public Sub[] subs;
 
     // ------------------------------------------------------------------ loader
-    private static Map<Integer, Model> world;
+    private static final String MODEL_DIR = "models/";
+    private static Map<Integer, String> index;
+    private static final Map<Integer, Model> cache = new HashMap<Integer, Model>();
+    private static final Map<String, Tex> textures = new HashMap<String, Tex>();
 
-    public static synchronized Model find(int userId, String resource) {
-        if (world == null) {
-            try {
-                world = load(resource);
-            } catch (Exception e) {
-                e.printStackTrace();
-                world = new HashMap<Integer, Model>();
-            }
-        }
-        return world.get(userId);
-    }
-
-    private static final class Raw { int type; byte[] body; Object parsed; boolean busy; }
-
-    private static Map<Integer, Model> load(String resource) throws IOException {
-        InputStream in = Model.class.getResourceAsStream(resource);
-        if (in == null) throw new IOException("missing resource " + resource);
-        byte[] file;
+    /** Returns the model registered under the given numeric id, or null. */
+    public static synchronized Model find(int userId) {
+        Model m = cache.get(userId);
+        if (m != null) return m;
+        if (index == null) index = loadIndex();
+        String file = index.get(userId);
+        if (file == null) return null;
         try {
-            ByteArrayOutputStream bo = new ByteArrayOutputStream();
-            byte[] buf = new byte[8192];
-            int n;
-            while ((n = in.read(buf)) > 0) bo.write(buf, 0, n);
-            file = bo.toByteArray();
-        } finally { in.close(); }
-        ByteBuffer bb = ByteBuffer.wrap(file).order(ByteOrder.LITTLE_ENDIAN);
-        bb.position(12);
-        java.util.ArrayList<Raw> objs = new java.util.ArrayList<Raw>();
-        objs.add(null); // index 0 = null
-        while (bb.remaining() > 13) {
-            int comp = bb.get() & 255;
-            int total = bb.getInt();
-            int unc = bb.getInt();
-            byte[] data = new byte[total - 13];
-            bb.get(data);
-            bb.getInt(); // adler
-            if (comp == 1) {
-                Inflater inf = new Inflater();
-                inf.setInput(data);
-                byte[] out = new byte[unc];
-                try { int off = 0; while (off < unc && !inf.finished()) off += inf.inflate(out, off, unc - off); }
-                catch (Exception e) { throw new IOException(e); }
-                inf.end();
-                data = out;
-            }
-            ByteBuffer sb = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN);
-            while (sb.remaining() >= 5) {
-                Raw r = new Raw();
-                r.type = sb.get() & 255;
-                int len = sb.getInt();
-                r.body = new byte[len];
-                sb.get(r.body);
-                objs.add(r);
-            }
+            m = loadObj(MODEL_DIR + file);
+            m.userId = userId;
+            cache.put(userId, m);
+            return m;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
-        Map<Integer, Model> result = new HashMap<Integer, Model>();
-        for (int i = 1; i < objs.size(); i++) {
-            Raw r = objs.get(i);
-            if (r.type == 14) {
-                Model m = (Model) get(objs, i);
-                if (m != null) result.put(m.userId, m);
+    }
+
+    private static Map<Integer, String> loadIndex() {
+        Map<Integer, String> map = new HashMap<Integer, String>();
+        try {
+            InputStream in = Assets.open(MODEL_DIR + "models.txt");
+            if (in == null) return map;
+            BufferedReader r = new BufferedReader(new InputStreamReader(in, "UTF-8"));
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0 || line.charAt(0) == '#') continue;
+                String[] p = line.split("\\s+");
+                if (p.length >= 2) map.put(Integer.valueOf(p[0]), p[1]);
             }
+            r.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-        return result;
+        return map;
     }
 
-    private static ByteBuffer buf(Raw r) { return ByteBuffer.wrap(r.body).order(ByteOrder.LITTLE_ENDIAN); }
-
-    /** Skips Object3D header, returns userId. */
-    private static int object3d(ByteBuffer b) {
-        int uid = b.getInt();
-        int tracks = b.getInt();
-        b.position(b.position() + 4 * tracks);
-        int params = b.getInt();
-        for (int i = 0; i < params; i++) { b.getInt(); int l = b.getInt(); b.position(b.position() + l); }
-        return uid;
+    /** Render state of one MTL material. */
+    private static final class Mat {
+        String texPath;
+        int blending = BLEND_REPLACE, alphaThreshold = 0, culling = CULL_BACK, texFunc = FUNC_MODULATE;
+        boolean depthTest = true, depthWrite = true, windingCCW = true, clamp = false;
     }
 
-    private static void transformable(ByteBuffer b) {
-        if (b.get() != 0) b.position(b.position() + 40);
-        if (b.get() != 0) b.position(b.position() + 64);
+    private static final class FloatList {
+        float[] a = new float[256];
+        int n;
+        void add(float v) { if (n == a.length) a = java.util.Arrays.copyOf(a, n * 2); a[n++] = v; }
     }
 
-    private static Object get(java.util.ArrayList<Raw> objs, int idx) {
-        if (idx <= 0 || idx >= objs.size()) return null;
-        Raw r = objs.get(idx);
-        if (r.parsed != null) return r.parsed;
-        if (r.busy) return null;
-        r.busy = true;
-        ByteBuffer b = buf(r);
-        switch (r.type) {
-            case 20: { // VertexArray
-                object3d(b);
-                int cs = b.get() & 255, cc = b.get() & 255, enc = b.get() & 255, vc = b.getShort() & 0xFFFF;
-                int[] data = new int[vc * cc];
-                if (cs == 1) {
-                    int prev[] = new int[cc];
-                    for (int v = 0; v < vc; v++) for (int c = 0; c < cc; c++) {
-                        int val = b.get();
-                        if (enc == 1) { val += prev[c]; prev[c] = val; }
-                        data[v * cc + c] = (byte) val;
+    private static final class IntList {
+        int[] a = new int[256];
+        int n;
+        void add(int v) { if (n == a.length) a = java.util.Arrays.copyOf(a, n * 2); a[n++] = v; }
+        int[] toArray() { return java.util.Arrays.copyOf(a, n); }
+    }
+
+    private static BufferedReader reader(String path) throws java.io.IOException {
+        InputStream in = Assets.open(path);
+        if (in == null) throw new java.io.IOException("missing asset " + path);
+        return new BufferedReader(new InputStreamReader(in, "UTF-8"));
+    }
+
+    private static Model loadObj(String objPath) throws java.io.IOException {
+        FloatList vx = new FloatList(), vt = new FloatList(), vc = new FloatList();
+        boolean haveColors = false;
+        int nv = 0, nvt = 0;
+        int defaultColor = 0xFFFFFFFF;
+        Map<String, Mat> materials = new HashMap<String, Mat>();
+
+        // unified vertices: unique (position index, texcoord index) pairs
+        Map<Long, Integer> unify = new HashMap<Long, Integer>();
+        FloatList outPos = new FloatList(), outUv = new FloatList(), outCol = new FloatList();
+        boolean anyUv = false;
+
+        List<Mat> subMats = new ArrayList<Mat>();
+        List<IntList> subTris = new ArrayList<IntList>();
+        IntList current = null;
+        Mat curMat = new Mat();
+        boolean curDirty = true;   // start a new submesh on the first face
+
+        BufferedReader r = reader(objPath);
+        try {
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.length() == 0) continue;
+                if (line.charAt(0) == '#') {
+                    if (line.startsWith("#@default_color ")) {
+                        defaultColor = (int) Long.parseLong(line.substring(16).trim(), 16);
                     }
-                } else {
-                    int prev[] = new int[cc];
-                    for (int v = 0; v < vc; v++) for (int c = 0; c < cc; c++) {
-                        int val = b.getShort();
-                        if (enc == 1) { val += prev[c]; prev[c] = val; }
-                        data[v * cc + c] = (short) val;
+                    continue;
+                }
+                String[] t = line.split("\\s+");
+                String key = t[0];
+                if (key.equals("v")) {
+                    vx.add(Float.parseFloat(t[1])); vx.add(Float.parseFloat(t[2])); vx.add(Float.parseFloat(t[3]));
+                    if (t.length >= 7) {
+                        haveColors = true;
+                        vc.add(Float.parseFloat(t[4])); vc.add(Float.parseFloat(t[5])); vc.add(Float.parseFloat(t[6]));
+                    } else {
+                        vc.add(-1f); vc.add(-1f); vc.add(-1f);
                     }
-                }
-                r.parsed = new int[][]{{cs, cc, vc}, data};
-                break;
-            }
-            case 11: { // TriangleStripArray
-                object3d(b);
-                int enc = b.get() & 255;
-                int[] idxs;
-                if (enc >= 128) {
-                    int n = b.getInt();
-                    idxs = new int[n];
-                    for (int i = 0; i < n; i++) idxs[i] = enc == 128 ? b.getInt() : (enc == 129 ? (b.get() & 255) : (b.getShort() & 0xFFFF));
-                    int ns = b.getInt();
-                    int[] strips = new int[ns];
-                    for (int i = 0; i < ns; i++) strips[i] = b.getInt();
-                    r.parsed = expand(idxs, strips, -1);
-                } else {
-                    int first = enc == 0 ? b.getInt() : (enc == 1 ? (b.get() & 255) : (b.getShort() & 0xFFFF));
-                    int ns = b.getInt();
-                    int[] strips = new int[ns];
-                    for (int i = 0; i < ns; i++) strips[i] = b.getInt();
-                    r.parsed = expand(null, strips, first);
-                }
-                break;
-            }
-            case 10: { // Image2D
-                object3d(b);
-                int fmt = b.get() & 255;
-                boolean mutable = b.get() != 0;
-                Tex t = new Tex();
-                t.w = b.getInt(); t.h = b.getInt();
-                t.argb = new int[t.w * t.h];
-                if (!mutable) {
-                    int pal = b.getInt();
-                    byte[] palette = new byte[pal];
-                    b.get(palette);
-                    int pix = b.getInt();
-                    byte[] px = new byte[pix];
-                    b.get(px);
-                    int bpp = fmt == 99 ? 3 : fmt == 100 ? 4 : fmt == 98 ? 2 : 1;
-                    for (int i = 0; i < t.w * t.h; i++) {
-                        byte[] src; int o;
-                        if (pal > 0) { src = palette; o = (px[i] & 255) * bpp; } else { src = px; o = i * bpp; }
-                        if (o + bpp > src.length) break;
-                        int a = 255, rr, gg, bl;
-                        switch (fmt) {
-                            case 96: a = src[o] & 255; rr = gg = bl = 255; break;
-                            case 97: rr = gg = bl = src[o] & 255; break;
-                            case 98: rr = gg = bl = src[o] & 255; a = src[o + 1] & 255; break;
-                            case 99: rr = src[o] & 255; gg = src[o + 1] & 255; bl = src[o + 2] & 255; break;
-                            default: rr = src[o] & 255; gg = src[o + 1] & 255; bl = src[o + 2] & 255; a = src[o + 3] & 255; break;
+                    nv++;
+                } else if (key.equals("vt")) {
+                    vt.add(Float.parseFloat(t[1]));
+                    vt.add(1f - (t.length > 2 ? Float.parseFloat(t[2]) : 0f));
+                    nvt++;
+                } else if (key.equals("mtllib")) {
+                    String mtlPath = Assets.dirOf(objPath) + line.substring(6).trim();
+                    parseMtl(mtlPath, materials);
+                } else if (key.equals("usemtl")) {
+                    Mat m = materials.get(line.substring(6).trim());
+                    curMat = m != null ? m : new Mat();
+                    curDirty = true;
+                } else if (key.equals("f")) {
+                    if (curDirty) {
+                        current = new IntList();
+                        subTris.add(current);
+                        subMats.add(curMat);
+                        curDirty = false;
+                    }
+                    int cnt = t.length - 1;
+                    int[] face = new int[cnt];
+                    for (int k = 0; k < cnt; k++) {
+                        String[] c = t[k + 1].split("/", -1);
+                        int vi = idx(Integer.parseInt(c[0]), nv);
+                        int ti = (c.length > 1 && c[1].length() > 0) ? idx(Integer.parseInt(c[1]), nvt) : -1;
+                        long ukey = ((long) vi << 32) | (ti + 1L);
+                        Integer u = unify.get(ukey);
+                        if (u == null) {
+                            u = outPos.n / 3;
+                            unify.put(ukey, u);
+                            outPos.add(vx.a[vi * 3]); outPos.add(vx.a[vi * 3 + 1]); outPos.add(vx.a[vi * 3 + 2]);
+                            if (ti >= 0) { outUv.add(vt.a[ti * 2]); outUv.add(vt.a[ti * 2 + 1]); anyUv = true; }
+                            else { outUv.add(0f); outUv.add(0f); }
+                            outCol.add(vc.a[vi * 3]); outCol.add(vc.a[vi * 3 + 1]); outCol.add(vc.a[vi * 3 + 2]);
                         }
-                        t.argb[i] = (a << 24) | (rr << 16) | (gg << 8) | bl;
+                        face[k] = u;
+                    }
+                    for (int k = 1; k + 1 < cnt; k++) {   // fan triangulation
+                        current.add(face[0]); current.add(face[k]); current.add(face[k + 1]);
                     }
                 }
-                r.parsed = t;
-                break;
             }
-            case 17: { // Texture2D
-                object3d(b);
-                transformable(b);
-                int img = b.getInt();
-                b.position(b.position() + 3);
-                int blending = b.get() & 255, ws = b.get() & 255, wt = b.get() & 255;
-                Tex src = (Tex) get(objs, img);
-                r.parsed = new Object[]{src, blending, ws};
-                break;
-            }
-            case 6: { // CompositingMode
-                object3d(b);
-                boolean dt = b.get() != 0, dw = b.get() != 0;
-                b.get(); b.get();
-                int blend = b.get() & 255, thr = b.get() & 255;
-                r.parsed = new int[]{dt ? 1 : 0, dw ? 1 : 0, blend, thr};
-                break;
-            }
-            case 8: { // PolygonMode
-                object3d(b);
-                int cull = b.get() & 255; b.get(); int wind = b.get() & 255;
-                r.parsed = new int[]{cull, wind};
-                break;
-            }
-            case 3: { // Appearance
-                object3d(b);
-                b.get();
-                int comp = b.getInt(), fog = b.getInt(), poly = b.getInt(), mat = b.getInt();
-                int tc = b.getInt();
-                int tex = tc > 0 ? b.getInt() : 0;
-                Sub s = new Sub();
-                int[] cm = (int[]) get(objs, comp);
-                if (cm != null) { s.depthTest = cm[0] != 0; s.depthWrite = cm[1] != 0; s.blending = cm[2]; s.alphaThreshold = cm[3]; }
-                int[] pm = (int[]) get(objs, poly);
-                if (pm != null) { s.culling = pm[0]; s.windingCCW = pm[1] == 168; }
-                Object[] t = (Object[]) get(objs, tex);
-                if (t != null) { s.tex = (Tex) t[0]; s.texFunc = (Integer) t[1]; s.clamp = ((Integer) t[2]) == 240; }
-                r.parsed = s;
-                break;
-            }
-            case 21: { // VertexBuffer -> kept as raw holder
-                object3d(b);
-                int col = b.getInt();
-                int posIdx = b.getInt();
-                float[] bias = {b.getFloat(), b.getFloat(), b.getFloat()};
-                float scale = b.getFloat();
-                int norIdx = b.getInt(), colIdx = b.getInt();
-                int ntc = b.getInt();
-                int tcIdx = 0; float[] tcBias = null; float tcScale = 0;
-                for (int i = 0; i < ntc; i++) {
-                    int ti = b.getInt();
-                    float[] tb = {b.getFloat(), b.getFloat(), b.getFloat()};
-                    float ts = b.getFloat();
-                    if (i == 0) { tcIdx = ti; tcBias = tb; tcScale = ts; }
-                }
-                Model m = new Model();
-                m.defaultColor = col;
-                int[][] p = (int[][]) get(objs, posIdx);
-                m.vertexCount = p[0][2];
-                m.pos = new float[m.vertexCount * 3];
-                for (int v = 0; v < m.vertexCount; v++)
-                    for (int c = 0; c < 3; c++) m.pos[v * 3 + c] = p[1][v * p[0][1] + c] * scale + bias[c];
-                if (tcIdx != 0) {
-                    int[][] t = (int[][]) get(objs, tcIdx);
-                    m.uv = new float[m.vertexCount * 2];
-                    for (int v = 0; v < m.vertexCount; v++)
-                        for (int c = 0; c < 2; c++) m.uv[v * 2 + c] = t[1][v * t[0][1] + c] * tcScale + tcBias[c];
-                }
-                m.colors = new int[m.vertexCount];
-                if (colIdx != 0) {
-                    int[][] c = (int[][]) get(objs, colIdx);
-                    for (int v = 0; v < m.vertexCount; v++) {
-                        int cc = c[0][1];
-                        int rr = c[1][v * cc] & 255, gg = c[1][v * cc + 1] & 255, bl = c[1][v * cc + 2] & 255;
-                        int a = cc > 3 ? c[1][v * cc + 3] & 255 : 255;
-                        m.colors[v] = (a << 24) | (rr << 16) | (gg << 8) | bl;
-                    }
-                } else {
-                    java.util.Arrays.fill(m.colors, col);
-                }
-                r.parsed = m;
-                break;
-            }
-            case 14: { // Mesh
-                int uid = object3d(b);
-                transformable(b);
-                b.get(); b.get(); b.get(); b.getInt();
-                if (b.get() != 0) { b.get(); b.get(); b.getInt(); b.getInt(); }
-                int vb = b.getInt();
-                int n = b.getInt();
-                Model base = (Model) get(objs, vb);
-                if (base == null) { r.parsed = null; r.busy = false; return null; }
-                Model m = new Model();
-                m.userId = uid;
-                m.vertexCount = base.vertexCount; m.pos = base.pos; m.uv = base.uv; m.colors = base.colors; m.defaultColor = base.defaultColor;
-                m.subs = new Sub[n];
-                for (int i = 0; i < n; i++) {
-                    int ib = b.getInt(), ap = b.getInt();
-                    Sub s = (Sub) get(objs, ap);
-                    Sub copy = new Sub();
-                    if (s != null) {
-                        copy.tex = s.tex; copy.blending = s.blending; copy.alphaThreshold = s.alphaThreshold;
-                        copy.depthTest = s.depthTest; copy.depthWrite = s.depthWrite; copy.culling = s.culling;
-                        copy.windingCCW = s.windingCCW; copy.texFunc = s.texFunc; copy.clamp = s.clamp;
-                    }
-                    copy.tris = (int[]) get(objs, ib);
-                    if (copy.tris == null) copy.tris = new int[0];
-                    m.subs[i] = copy;
-                }
-                r.parsed = m;
-                break;
-            }
-            default:
-                r.parsed = null;
+        } finally {
+            r.close();
         }
-        r.busy = false;
-        return r.parsed;
+
+        Model m = new Model();
+        m.defaultColor = defaultColor;
+        m.vertexCount = outPos.n / 3;
+        m.pos = java.util.Arrays.copyOf(outPos.a, outPos.n);
+        m.uv = anyUv ? java.util.Arrays.copyOf(outUv.a, outUv.n) : null;
+        m.colors = new int[m.vertexCount];
+        for (int v = 0; v < m.vertexCount; v++) {
+            float cr = outCol.a[v * 3];
+            if (!haveColors || cr < 0f) {
+                m.colors[v] = defaultColor;
+            } else {
+                int rr = Math.round(cr * 255f), gg = Math.round(outCol.a[v * 3 + 1] * 255f), bb = Math.round(outCol.a[v * 3 + 2] * 255f);
+                m.colors[v] = 0xFF000000 | (rr << 16) | (gg << 8) | bb;
+            }
+        }
+        m.subs = new Sub[subTris.size()];
+        for (int i = 0; i < m.subs.length; i++) {
+            Mat mt = subMats.get(i);
+            Sub s = new Sub();
+            s.tris = subTris.get(i).toArray();
+            s.blending = mt.blending; s.alphaThreshold = mt.alphaThreshold;
+            s.depthTest = mt.depthTest; s.depthWrite = mt.depthWrite;
+            s.culling = mt.culling; s.windingCCW = mt.windingCCW;
+            s.texFunc = mt.texFunc; s.clamp = mt.clamp;
+            s.tex = mt.texPath != null ? loadTexture(mt.texPath) : null;
+            m.subs[i] = s;
+        }
+        return m;
     }
 
-    private static int[] expand(int[] idxs, int[] strips, int first) {
-        int total = 0;
-        for (int s : strips) total += Math.max(0, s - 2) * 3;
-        int[] out = new int[total];
-        int o = 0, base = 0;
-        for (int s : strips) {
-            for (int i = 0; i + 2 < s; i++) {
-                int a = idxs != null ? idxs[base + i] : first + base + i;
-                int b2 = idxs != null ? idxs[base + i + 1] : first + base + i + 1;
-                int c = idxs != null ? idxs[base + i + 2] : first + base + i + 2;
-                if ((i & 1) == 0) { out[o++] = a; out[o++] = b2; out[o++] = c; }
-                else { out[o++] = b2; out[o++] = a; out[o++] = c; }
+    private static int idx(int i, int count) {
+        return i > 0 ? i - 1 : count + i;
+    }
+
+    private static void parseMtl(String path, Map<String, Mat> out) {
+        BufferedReader r = null;
+        try {
+            r = reader(path);
+            Mat cur = null;
+            String line;
+            while ((line = r.readLine()) != null) {
+                line = line.trim();
+                if (line.startsWith("newmtl ")) {
+                    cur = new Mat();
+                    out.put(line.substring(7).trim(), cur);
+                } else if (cur == null) {
+                    continue;
+                } else if (line.startsWith("map_Kd ")) {
+                    cur.texPath = Assets.dirOf(path) + line.substring(7).trim();
+                } else if (line.startsWith("#@")) {
+                    String[] p = line.substring(2).trim().split("\\s+", 2);
+                    if (p.length < 2) continue;
+                    String k = p[0], v = p[1].trim();
+                    if (k.equals("blend")) cur.blending = v.equals("ALPHA") ? BLEND_ALPHA : BLEND_REPLACE;
+                    else if (k.equals("alpha_threshold")) cur.alphaThreshold = Integer.parseInt(v);
+                    else if (k.equals("depth_test")) cur.depthTest = Boolean.parseBoolean(v);
+                    else if (k.equals("depth_write")) cur.depthWrite = Boolean.parseBoolean(v);
+                    else if (k.equals("cull")) cur.culling = v.equals("FRONT") ? CULL_FRONT : v.equals("NONE") ? CULL_NONE : CULL_BACK;
+                    else if (k.equals("winding")) cur.windingCCW = !v.equals("CW");
+                    else if (k.equals("texture_function")) cur.texFunc = v.equals("REPLACE") ? FUNC_REPLACE : FUNC_MODULATE;
+                    else if (k.equals("clamp")) cur.clamp = Boolean.parseBoolean(v);
+                }
             }
-            base += s;
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try { if (r != null) r.close(); } catch (Exception ignored) { }
         }
-        return out;
+    }
+
+    private static Tex loadTexture(String path) {
+        Tex t = textures.get(path);
+        if (t != null) return t;
+        try {
+            byte[] data = Assets.readBytes(path);
+            if (data == null) return null;
+            BufferedImage bi = ImageIO.read(new ByteArrayInputStream(data));
+            if (bi == null) return null;
+            t = new Tex();
+            t.w = bi.getWidth();
+            t.h = bi.getHeight();
+            t.argb = bi.getRGB(0, 0, t.w, t.h, null, 0, t.w);
+            textures.put(path, t);
+            return t;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /** What Mesh3D.setupAppearance() did on the original: textures use REPLACE + clamp. */

@@ -74,7 +74,9 @@ public abstract class Canvas extends Displayable {
                 boolean integer = Math.abs(s - Math.round(s)) < 0.001;
                 g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, integer
                         ? RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR : RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+                g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
                 synchronized (shown) { g.drawImage(shown, dx, dy, dw, dh, null); }
+                java.awt.Toolkit.getDefaultToolkit().sync();   // flush to the display (smoother on Linux/X11)
             }
         };
         panel.setPreferredSize(new Dimension(LOGICAL_W, LOGICAL_H));
@@ -126,7 +128,7 @@ public abstract class Canvas extends Displayable {
         });
         frame = new JFrame("City Bloxx");
         try {
-            java.io.InputStream in = Canvas.class.getResourceAsStream("/icon.png");
+            java.io.InputStream in = Assets.open("images/icon.png");
             if (in != null) frame.setIconImage(javax.imageio.ImageIO.read(in));
         } catch (Exception e) { }
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);

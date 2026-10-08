@@ -32,8 +32,14 @@ public final class Graphics {
         if (Graphics3D.pendingTarget == this) Graphics3D.flushPending();
     }
 
-    public void setColor(int rgb) { g2.setColor(new Color(rgb & 0xFFFFFF)); }
-    public void setColor(int r, int g, int b) { g2.setColor(new Color(r & 255, g & 255, b & 255)); }
+    private int lastRgb = -1;
+    private Color lastColor;
+    public void setColor(int rgb) {
+        rgb &= 0xFFFFFF;
+        if (rgb != lastRgb || lastColor == null) { lastRgb = rgb; lastColor = new Color(rgb); }
+        g2.setColor(lastColor);
+    }
+    public void setColor(int r, int g, int b) { setColor(((r & 255) << 16) | ((g & 255) << 8) | (b & 255)); }
     public void setFont(Font f) { if (f != null) { font = f; g2.setFont(f.awt); } }
     public Font getFont() { return font; }
 

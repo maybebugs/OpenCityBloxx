@@ -1,4 +1,5 @@
 
+import jme.Assets;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,16 +30,16 @@ public final class Lang {
                     instance = new Lang();
                 }
                 if (langStream == null) {
-                    InputStream inputStream = instance.getClass().getResourceAsStream("/lang." + locale);
+                    InputStream inputStream = Assets.open("lang/lang." + locale);
                     if (inputStream == null) {
                         int dash = locale.indexOf('-');
-                        if (dash > 0) inputStream = instance.getClass().getResourceAsStream("/lang." + locale.substring(0, dash));
+                        if (dash > 0) inputStream = Assets.open("lang/lang." + locale.substring(0, dash));
                     }
                     if (inputStream == null) {
-                        inputStream = instance.getClass().getResourceAsStream("/lang.en-US");
+                        inputStream = Assets.open("lang/lang.en-US");
                     }
                     if (inputStream == null) {
-                        inputStream = instance.getClass().getResourceAsStream("/lang.xx");
+                        inputStream = Assets.open("lang/lang.xx");
                     }
                     if (inputStream == null) {
                         return "X";

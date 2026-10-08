@@ -20,16 +20,12 @@ public final class Renderer3D {
     private Renderer3D() {
     }
 
-    private static String resourceName(int resId) {
-        return "/" + (Integer.MAX_VALUE & resId);
-    }
-
     public static final Mesh3D getModel(int id, int resId, boolean load) {
         Mesh3D cached = (Mesh3D) models.get(Integer.valueOf(id));
         if (cached != null || !load) {
             return cached;
         }
-        Model mesh = Model.find(id, resourceName(resId));
+        Model mesh = Model.find(id)  /* resId (old M3G package) is no longer needed: models come from assets/models/*.obj */;
         if (mesh == null) {
             return null;
         }

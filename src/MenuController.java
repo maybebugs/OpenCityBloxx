@@ -1,5 +1,6 @@
 
 
+import jme.Assets;
 import java.io.DataInputStream;
 import java.lang.reflect.Array;
 import jme.Command;
@@ -42,7 +43,7 @@ public final class MenuController implements Screen {
         int k = 0;
         try {
             canvas = canvasArg;
-            menuData = new DataInputStream(getClass().getResourceAsStream("m"));
+            menuData = new DataInputStream(Assets.open("data/menu.dat"));
             palette = new int[9];
             int d = MenuController.readValue(2);
             MenuController.readValue((-d) * 2);
@@ -100,7 +101,7 @@ public final class MenuController implements Screen {
             executeActions(2);
             return;
         }
-        menuData = new DataInputStream(getClass().getResourceAsStream("m"));
+        menuData = new DataInputStream(Assets.open("data/menu.dat"));
         MenuController.readValue(-((menuId * 2) - 1));
         MenuController.readValue(-MenuController.readValue(3));
         int type = MenuController.readValue(2);

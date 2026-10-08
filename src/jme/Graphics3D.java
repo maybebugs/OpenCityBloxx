@@ -145,31 +145,48 @@ public final class Graphics3D {
     // ---------------------------------------------------------------- rendering
     private static final int MAXV = 12;
 
+    // scratch buffers reused across calls (no per-triangle / per-model allocation)
+    private static float[] clipBuf = new float[4 * 1024];
+    private static final float[][] poly = new float[MAXV][10];
+    private static final float[][] tmp = new float[MAXV][10];
+    private static final float[] sx = new float[3], sy = new float[3], sz = new float[3], iw = new float[3];
+
     public static void render(Model m, float[] model) {
         if (target == null || m == null) return;
         float[] mv = mul(view, model);
         float[] mvp = mul(proj, mv);
         int n = m.vertexCount;
-        float[] clip = new float[n * 4];
+        if (clipBuf.length < n * 4) clipBuf = new float[n * 4];
+        float[] clip = clipBuf;
+        float[] pos = m.pos;
         for (int i = 0; i < n; i++) {
-            float x = m.pos[i * 3], y = m.pos[i * 3 + 1], z = m.pos[i * 3 + 2];
+            float x = pos[i * 3], y = pos[i * 3 + 1], z = pos[i * 3 + 2];
             clip[i * 4] = mvp[0] * x + mvp[1] * y + mvp[2] * z + mvp[3];
             clip[i * 4 + 1] = mvp[4] * x + mvp[5] * y + mvp[6] * z + mvp[7];
             clip[i * 4 + 2] = mvp[8] * x + mvp[9] * y + mvp[10] * z + mvp[11];
             clip[i * 4 + 3] = mvp[12] * x + mvp[13] * y + mvp[14] * z + mvp[15];
         }
-        float[][] poly = new float[MAXV][10];
-        float[][] tmp = new float[MAXV][10];
+        final float[] uv = m.uv;
+        final int[] colors = m.colors;
         for (Model.Sub s : m.subs) {
             int[] t = s.tris;
             for (int i = 0; i + 2 < t.length; i += 3) {
+                // trivial reject: all three vertices outside the same frustum plane
+                int i0 = t[i] * 4, i1 = t[i + 1] * 4, i2 = t[i + 2] * 4;
+                float w0 = clip[i0 + 3], w1 = clip[i1 + 3], w2 = clip[i2 + 3];
+                if (clip[i0] > w0 && clip[i1] > w1 && clip[i2] > w2) continue;
+                if (clip[i0] < -w0 && clip[i1] < -w1 && clip[i2] < -w2) continue;
+                if (clip[i0 + 1] > w0 && clip[i1 + 1] > w1 && clip[i2 + 1] > w2) continue;
+                if (clip[i0 + 1] < -w0 && clip[i1 + 1] < -w1 && clip[i2 + 1] < -w2) continue;
+                if (clip[i0 + 2] > w0 && clip[i1 + 2] > w1 && clip[i2 + 2] > w2) continue;
+
                 int cnt = 0;
                 for (int k = 0; k < 3; k++) {
                     int vi = t[i + k];
                     float[] p = poly[cnt++];
                     p[0] = clip[vi * 4]; p[1] = clip[vi * 4 + 1]; p[2] = clip[vi * 4 + 2]; p[3] = clip[vi * 4 + 3];
-                    if (m.uv != null) { p[4] = m.uv[vi * 2]; p[5] = m.uv[vi * 2 + 1]; } else { p[4] = 0; p[5] = 0; }
-                    int c = m.colors[vi];
+                    if (uv != null) { p[4] = uv[vi * 2]; p[5] = uv[vi * 2 + 1]; } else { p[4] = 0; p[5] = 0; }
+                    int c = colors[vi];
                     p[6] = (c >> 16) & 255; p[7] = (c >> 8) & 255; p[8] = c & 255; p[9] = (c >>> 24);
                 }
                 // clip against near plane: z >= -w
@@ -193,16 +210,16 @@ public final class Graphics3D {
     private static void copy(float[] a, float[] b) { System.arraycopy(a, 0, b, 0, 10); }
 
     private static void drawTri(Model.Sub s, float[] a, float[] b, float[] c) {
-        float[] sx = new float[3], sy = new float[3], sz = new float[3], iw = new float[3];
-        float[][] v = {a, b, c};
+        float[] v0 = a, v1 = b, v2 = c;
         for (int i = 0; i < 3; i++) {
-            float w = v[i][3];
+            float[] v = i == 0 ? v0 : i == 1 ? v1 : v2;
+            float w = v[3];
             if (w <= 1e-6f) return;
-            iw[i] = 1f / w;
-            float nx = v[i][0] * iw[i], ny = v[i][1] * iw[i], nz = v[i][2] * iw[i];
-            sx[i] = vpX + (nx * 0.5f + 0.5f) * vpW;
-            sy[i] = vpY + (-ny * 0.5f + 0.5f) * vpH;
-            sz[i] = nz;
+            float inv = 1f / w;
+            iw[i] = inv;
+            sx[i] = vpX + (v[0] * inv * 0.5f + 0.5f) * vpW;
+            sy[i] = vpY + (-v[1] * inv * 0.5f + 0.5f) * vpH;
+            sz[i] = v[2] * inv;
         }
         float area = (sx[1] - sx[0]) * (sy[2] - sy[0]) - (sx[2] - sx[0]) * (sy[1] - sy[0]); // >0: clockwise on screen (y down)
         if (area == 0) return;
@@ -211,52 +228,75 @@ public final class Graphics3D {
         if (s.culling == Model.CULL_BACK && !front) return;
         if (s.culling == Model.CULL_FRONT && front) return;
 
-        int minX = Math.max(clipX0, (int) Math.floor(Math.min(sx[0], Math.min(sx[1], sx[2]))));
-        int maxX = Math.min(clipX1 - 1, (int) Math.ceil(Math.max(sx[0], Math.max(sx[1], sx[2]))));
-        int minY = Math.max(clipY0, (int) Math.floor(Math.min(sy[0], Math.min(sy[1], sy[2]))));
-        int maxY = Math.min(clipY1 - 1, (int) Math.ceil(Math.max(sy[0], Math.max(sy[1], sy[2]))));
+        float fminX = Math.min(sx[0], Math.min(sx[1], sx[2])), fmaxX = Math.max(sx[0], Math.max(sx[1], sx[2]));
+        float fminY = Math.min(sy[0], Math.min(sy[1], sy[2])), fmaxY = Math.max(sy[0], Math.max(sy[1], sy[2]));
+        if (fmaxX < clipX0 || fminX > clipX1 || fmaxY < clipY0 || fminY > clipY1) return;
+        int minX = Math.max(clipX0, (int) Math.floor(fminX));
+        int maxX = Math.min(clipX1 - 1, (int) Math.ceil(fmaxX));
+        int minY = Math.max(clipY0, (int) Math.floor(fminY));
+        int maxY = Math.min(clipY1 - 1, (int) Math.ceil(fmaxY));
         if (minX > maxX || minY > maxY) return;
 
-        float invArea = 1f / area;
-        Model.Tex tex = s.tex;
-        boolean alphaBlend = s.blending == Model.BLEND_ALPHA;
-        int thr = s.alphaThreshold;
+        final float invArea = 1f / area;
+        // barycentric weights are linear in (x, y): step them instead of recomputing
+        final float dw0dx = (sy[1] - sy[2]) * invArea, dw0dy = (sx[2] - sx[1]) * invArea;
+        final float dw1dx = (sy[2] - sy[0]) * invArea, dw1dy = (sx[0] - sx[2]) * invArea;
+        final float px0 = minX + 0.5f;
+        final float iw0 = iw[0], iw1 = iw[1], iw2 = iw[2];
+        final float sz0 = sz[0], sz1 = sz[1], sz2 = sz[2];
+
+        final Model.Tex tex = s.tex;
+        final int[] texPx = tex != null ? tex.argb : null;
+        final int tw = tex != null ? tex.w : 0, th = tex != null ? tex.h : 0;
+        final boolean clamp = s.clamp, modulate = s.texFunc == Model.FUNC_MODULATE;
+        final boolean alphaBlend = s.blending == Model.BLEND_ALPHA;
+        final boolean depthTest = s.depthTest, depthWrite = s.depthWrite;
+        final int thr = s.alphaThreshold;
+        final float[] depth = Graphics3D.depth;
+        final int[] color = Graphics3D.color;
+
         for (int y = minY; y <= maxY; y++) {
             float py = y + 0.5f;
-            for (int x = minX; x <= maxX; x++) {
-                float px = x + 0.5f;
-                float w0 = ((sx[1] - px) * (sy[2] - py) - (sx[2] - px) * (sy[1] - py)) * invArea;
-                float w1 = ((sx[2] - px) * (sy[0] - py) - (sx[0] - px) * (sy[2] - py)) * invArea;
+            float w0 = ((sx[1] - px0) * (sy[2] - py) - (sx[2] - px0) * (sy[1] - py)) * invArea;
+            float w1 = ((sx[2] - px0) * (sy[0] - py) - (sx[0] - px0) * (sy[2] - py)) * invArea;
+            boolean entered = false;
+            int di = y * W + minX;
+            for (int x = minX; x <= maxX; x++, di++, w0 += dw0dx, w1 += dw1dx) {
                 float w2 = 1f - w0 - w1;
-                if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-                float z = w0 * sz[0] + w1 * sz[1] + w2 * sz[2];
+                if (w0 < 0 || w1 < 0 || w2 < 0) {
+                    if (entered) break;          // triangle is convex: row is finished
+                    continue;
+                }
+                entered = true;
+                float z = w0 * sz0 + w1 * sz1 + w2 * sz2;
                 if (z < -1f || z > 1f) continue;
-                int di = y * W + x;
-                if (s.depthTest && z > depth[di]) continue;
+                if (depthTest && z > depth[di]) continue;
                 // perspective-correct interpolation
-                float p0 = w0 * iw[0], p1 = w1 * iw[1], p2 = w2 * iw[2];
+                float p0 = w0 * iw0, p1 = w1 * iw1, p2 = w2 * iw2;
                 float ps = p0 + p1 + p2;
                 if (ps == 0) continue;
-                float k0 = p0 / ps, k1 = p1 / ps, k2 = p2 / ps;
+                float invPs = 1f / ps;
+                float k0 = p0 * invPs, k1 = p1 * invPs, k2 = p2 * invPs;
                 int r, g, bl, al;
                 float vr = k0 * a[6] + k1 * b[6] + k2 * c[6];
                 float vg = k0 * a[7] + k1 * b[7] + k2 * c[7];
                 float vb = k0 * a[8] + k1 * b[8] + k2 * c[8];
                 float va = k0 * a[9] + k1 * b[9] + k2 * c[9];
-                if (tex != null) {
-                    float u = k0 * a[4] + k1 * b[4] + k2 * c[4];
-                    float t = k0 * a[5] + k1 * b[5] + k2 * c[5];
-                    int tx = (int) Math.floor(u * tex.w), ty = (int) Math.floor(t * tex.h);
-                    if (s.clamp) {
-                        tx = tx < 0 ? 0 : (tx >= tex.w ? tex.w - 1 : tx);
-                        ty = ty < 0 ? 0 : (ty >= tex.h ? tex.h - 1 : ty);
+                if (texPx != null) {
+                    float u = (k0 * a[4] + k1 * b[4] + k2 * c[4]) * tw;
+                    float t = (k0 * a[5] + k1 * b[5] + k2 * c[5]) * th;
+                    int tx = (int) u; if (u < 0) tx--;
+                    int ty = (int) t; if (t < 0) ty--;
+                    if (clamp) {
+                        tx = tx < 0 ? 0 : (tx >= tw ? tw - 1 : tx);
+                        ty = ty < 0 ? 0 : (ty >= th ? th - 1 : ty);
                     } else {
-                        tx = ((tx % tex.w) + tex.w) % tex.w;
-                        ty = ((ty % tex.h) + tex.h) % tex.h;
+                        tx %= tw; if (tx < 0) tx += tw;
+                        ty %= th; if (ty < 0) ty += th;
                     }
-                    int tc = tex.argb[ty * tex.w + tx];
+                    int tc = texPx[ty * tw + tx];
                     r = (tc >> 16) & 255; g = (tc >> 8) & 255; bl = tc & 255; al = tc >>> 24;
-                    if (s.texFunc == Model.FUNC_MODULATE) {
+                    if (modulate) {
                         r = (int) (r * vr / 255f); g = (int) (g * vg / 255f); bl = (int) (bl * vb / 255f); al = (int) (al * va / 255f);
                     }
                 } else {
@@ -264,9 +304,9 @@ public final class Graphics3D {
                 }
                 if (thr > 0 && al < thr) continue;
                 if (!alphaBlend) al = 255;
-                if (s.depthWrite) depth[di] = z;
+                if (depthWrite) depth[di] = z;
                 int dst = color[di];
-                if (al >= 255 || (dst >>> 24) == 0 && al >= 255) {
+                if (al >= 255) {
                     color[di] = 0xFF000000 | (r << 16) | (g << 8) | bl;
                 } else if (al > 0) {
                     int da = dst >>> 24;

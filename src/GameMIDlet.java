@@ -138,7 +138,7 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
 
     private int calculateDeltaTime() {
         int i = 500;
-        long currentTimeMillis = System.currentTimeMillis();
+        long currentTimeMillis = nowMs();
         int i2 = (int) (currentTimeMillis - this.lastFrameTime);
         this.elapsedMs += i2;
         this.lastFrameTime = currentTimeMillis;
@@ -295,7 +295,7 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     protected final void resume() {
         try {
             Storage.dirty = true;
-            this.lastFrameTime = System.currentTimeMillis();
+            this.lastFrameTime = nowMs();
             this.paused = false;
             if (this.loadState != -1) {
                 Ui.update(0);
@@ -304,9 +304,42 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
         }
     }
 
+    /** Target frame rate of the desktop loop (game logic is dt-based, so this only affects smoothness). */
+    private static final int TARGET_FPS = 60;
+    private static final long FRAME_NS = 1000000000L / TARGET_FPS;
+    private long nextFrameNs;
+
+    /** Monotonic millisecond clock (immune to system clock changes / coarse timer ticks). */
+    private static long nowMs() {
+        return System.nanoTime() / 1000000L;
+    }
+
+    /**
+     * Fixed-step frame limiter: sleeps most of the remaining time, then yields for the last
+     * ~1.5 ms so frames land on an even cadence instead of the 30 ms +/- timer jitter of
+     * Thread.sleep.  If we fall behind, the schedule resets instead of trying to catch up.
+     */
+    private void paceFrame(long frameStartNs) {
+        long target = nextFrameNs == 0 ? frameStartNs + FRAME_NS : nextFrameNs + FRAME_NS;
+        long now = System.nanoTime();
+        if (target < now - FRAME_NS) target = now;      // fell behind: resync
+        nextFrameNs = target;
+        try {
+            long left;
+            while ((left = target - System.nanoTime()) > 1500000L) {
+                Thread.sleep((left - 1000000L) / 1000000L);
+            }
+            while (target - System.nanoTime() > 0) {
+                Thread.yield();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+
     public void run() {
         while (!this.exitRequested) {
-            long frameStart = System.currentTimeMillis();
+            long frameStartNs = System.nanoTime();
             try {
                 if (!this.paused) {
                     int i = calculateDeltaTime();
@@ -337,14 +370,7 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
                         }
                     }
                 }
-                try {
-                    // Desktop frame limiter (~33 fps). Without it the loop spins at thousands of
-                    // frames/s, the integer dt average truncates to 0 and game time never advances.
-                    long spent = System.currentTimeMillis() - frameStart;
-                    long wait = 30 - spent;
-                    Thread.sleep(wait < 2 ? 2 : wait);
-                } catch (Exception e) {
-                }
+                paceFrame(frameStartNs);
             } catch (Throwable t) {
                 t.printStackTrace();
                 try {
@@ -404,7 +430,7 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     protected final void resetTiming() {
         int i = 0;
         this.elapsedMs = 0;
-        this.lastFrameTime = System.currentTimeMillis();
+        this.lastFrameTime = nowMs();
         this.dtIndex = 0;
         while (i < 8) {
             this.dtHistory[i] = 40;
