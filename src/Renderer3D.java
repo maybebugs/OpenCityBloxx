@@ -20,27 +20,27 @@ public final class Renderer3D {
     private Renderer3D() {
     }
 
-    private static String resourceName(int i2) {
-        return "/" + (Integer.MAX_VALUE & i2);
+    private static String resourceName(int resId) {
+        return "/" + (Integer.MAX_VALUE & resId);
     }
 
-    public static final Mesh3D getModel(int i, int i2, boolean z) {
-        Mesh3D dVar = (Mesh3D) models.get(Integer.valueOf(i));
-        if (dVar != null || !z) {
-            return dVar;
+    public static final Mesh3D getModel(int id, int resId, boolean load) {
+        Mesh3D cached = (Mesh3D) models.get(Integer.valueOf(id));
+        if (cached != null || !load) {
+            return cached;
         }
-        Model mesh = Model.find(i, resourceName(i2));
+        Model mesh = Model.find(id, resourceName(resId));
         if (mesh == null) {
             return null;
         }
-        Mesh3D dVar2 = new Mesh3D(mesh);
-        dVar2.setupAppearance();
-        models.put(Integer.valueOf(i), dVar2);
-        return dVar2;
+        Mesh3D created = new Mesh3D(mesh);
+        created.setupAppearance();
+        models.put(Integer.valueOf(id), created);
+        return created;
     }
 
-    public static final void setFov(float f) {
-        fov = f;
+    public static final void setFov(float fovDegrees) {
+        fov = fovDegrees;
         projection = Graphics3D.perspective(fov * aspectInv, aspect, 10.0f, 10000.0f);
     }
 
@@ -54,27 +54,27 @@ public final class Renderer3D {
         if (dirZ < 1.0E-4f && dirZ > -1.0E-4f) {
             dirZ = 0.0f;
         }
-        float f10 = (dirY * upZ) - (dirZ * upY);
-        float f11 = (dirZ * upX) - (dirX * upZ);
-        float f12 = (dirX * upY) - (dirY * upX);
-        float sqrt = 1.0f / ((float) Math.sqrt((double) (((f10 * f10) + (f11 * f11)) + (f12 * f12))));
-        f10 *= sqrt;
-        f11 *= sqrt;
-        f12 *= sqrt;
-        sqrt = (f11 * dirZ) - (f12 * dirY);
-        float f13 = (f12 * dirX) - (f10 * dirZ);
-        float f14 = (f10 * dirY) - (f11 * dirX);
+        float crossX = (dirY * upZ) - (dirZ * upY);
+        float crossY = (dirZ * upX) - (dirX * upZ);
+        float crossZ = (dirX * upY) - (dirY * upX);
+        float invLength = 1.0f / ((float) Math.sqrt((double) (((crossX * crossX) + (crossY * crossY)) + (crossZ * crossZ))));
+        crossX *= invLength;
+        crossY *= invLength;
+        crossZ *= invLength;
+        float finalUpX = (crossY * dirZ) - (crossZ * dirY);
+        float finalUpY = (crossZ * dirX) - (crossX * dirZ);
+        float finalUpZ = (crossX * dirY) - (crossY * dirX);
         float[] matrix = new float[16];
-        matrix[0] = f10;
-        matrix[1] = sqrt;
+        matrix[0] = crossX;
+        matrix[1] = finalUpX;
         matrix[2] = -dirX;
         matrix[3] = eyeX;
-        matrix[4] = f11;
-        matrix[5] = f13;
+        matrix[4] = crossY;
+        matrix[5] = finalUpY;
         matrix[6] = -dirY;
         matrix[7] = eyeY;
-        matrix[8] = f12;
-        matrix[9] = f14;
+        matrix[8] = crossZ;
+        matrix[9] = finalUpZ;
         matrix[10] = -dirZ;
         matrix[11] = eyeZ;
         matrix[12] = 0.0f;
@@ -85,9 +85,9 @@ public final class Renderer3D {
         Graphics3D.setCamera(cameraTransform, projection);
     }
 
-    public static final void init(int i, int i2, int i3) {
+    public static final void init(int top, int width, int height) {
         models = new Hashtable();
-        Renderer3D.setupCamera(i, i2, i3);
+        Renderer3D.setupCamera(top, width, height);
     }
 
     public static final void beginFrame(Object obj) {
@@ -98,17 +98,17 @@ public final class Renderer3D {
         Graphics3D.setCamera(cameraTransform, projection);
     }
 
-    public static final void project(float[] fArr) {
-        float[] inv = Graphics3D.invert(cameraTransform);
-        Graphics3D.transform(inv, fArr);
-        Graphics3D.transform(projection, fArr);
-        fArr[0] = (((0.5f * ((float) viewWidth)) * fArr[0]) / fArr[3]) + ((float) (viewWidth >> 1));
-        fArr[1] = (((-0.5f * ((float) viewHeight)) * fArr[1]) / fArr[3]) + ((float) (viewHeight >> 1));
+    public static final void project(float[] vertexCoords) {
+        float[] invCamera = Graphics3D.invert(cameraTransform);
+        Graphics3D.transform(invCamera, vertexCoords);
+        Graphics3D.transform(projection, vertexCoords);
+        vertexCoords[0] = (((0.5f * ((float) viewWidth)) * vertexCoords[0]) / vertexCoords[3]) + ((float) (viewWidth >> 1));
+        vertexCoords[1] = (((-0.5f * ((float) viewHeight)) * vertexCoords[1]) / vertexCoords[3]) + ((float) (viewHeight >> 1));
     }
 
-    public static final void preloadModels(int[] iArr, int i) {
-        for (int i2 = 0; i2 < iArr.length; i2++) {
-            getModel(iArr[i2], i, true);
+    public static final void preloadModels(int[] ids, int resId) {
+        for (int k = 0; k < ids.length; k++) {
+            getModel(ids[k], resId, true);
         }
     }
 
@@ -116,12 +116,12 @@ public final class Renderer3D {
         Graphics3D.releaseTarget();
     }
 
-    private static final void setupCamera(int i, int i2, int i3) {
-        viewTop = i;
-        viewWidth = i2;
-        viewHeight = i3;
-        aspect = ((((float) viewWidth) / ((float) (viewHeight - i))) * 0.7f) + 0.3f;
-        aspectInv = ((((float) (viewHeight - i)) / ((float) viewWidth)) * 0.7f) + 0.3f;
+    private static final void setupCamera(int top, int width, int height) {
+        viewTop = top;
+        viewWidth = width;
+        viewHeight = height;
+        aspect = ((((float) viewWidth) / ((float) (viewHeight - top))) * 0.7f) + 0.3f;
+        aspectInv = ((((float) (viewHeight - top)) / ((float) viewWidth)) * 0.7f) + 0.3f;
         Renderer3D.setFov(60.0f);
         cameraTransform = Graphics3D.identity();
     }

@@ -21,34 +21,34 @@ public final class Lang {
     }
 
     /** Returns language string #index with %U / %0U %1U ... replaced by args. */
-    public static synchronized String getString(int index, String[] args) {
-        String str;
+    public static synchronized String getString(int index, String[] formatArgs) {
+        String result;
         synchronized (Lang.class) {
             try {
                 if (instance == null) {
                     instance = new Lang();
                 }
                 if (langStream == null) {
-                    InputStream is = instance.getClass().getResourceAsStream(new StringBuffer().append("/lang.").append(locale).toString());
-                    if (is == null) {
+                    InputStream inputStream = instance.getClass().getResourceAsStream(new StringBuffer().append("/lang.").append(locale).toString());
+                    if (inputStream == null) {
                         int dash = locale.indexOf('-');
-                        if (dash > 0) is = instance.getClass().getResourceAsStream("/lang." + locale.substring(0, dash));
+                        if (dash > 0) inputStream = instance.getClass().getResourceAsStream("/lang." + locale.substring(0, dash));
                     }
-                    if (is == null) {
-                        is = instance.getClass().getResourceAsStream("/lang.en-US");
+                    if (inputStream == null) {
+                        inputStream = instance.getClass().getResourceAsStream("/lang.en-US");
                     }
-                    if (is == null) {
-                        is = instance.getClass().getResourceAsStream("/lang.xx");
+                    if (inputStream == null) {
+                        inputStream = instance.getClass().getResourceAsStream("/lang.xx");
                     }
-                    if (is == null) {
+                    if (inputStream == null) {
                         return "X";
                     }
-                    langStream = new DataInputStream(is);
+                    langStream = new DataInputStream(inputStream);
                     langStream.mark(512);
                 }
                 langStream.skipBytes(index * 2);
                 langStream.skipBytes((langStream.readUnsignedShort() - (index * 2)) - 2);
-                str = langStream.readUTF();
+                result = langStream.readUTF();
                 if (langStream.markSupported()) {
                     try {
                         langStream.reset();
@@ -60,31 +60,31 @@ public final class Lang {
                     langStream.close();
                     langStream = null;
                 }
-                if (args != null) {
-                    if (args.length == 1) {
-                        str = replaceAll(str, "%U", args[0]);
+                if (formatArgs != null) {
+                    if (formatArgs.length == 1) {
+                        result = replaceAll(result, "%U", formatArgs[0]);
                     } else {
-                        for (int i = 0; i < args.length; i++) {
-                            str = replaceAll(str, new StringBuffer().append("%").append(i).append("U").toString(), args[i]);
+                        for (int i = 0; i < formatArgs.length; i++) {
+                            result = replaceAll(result, new StringBuffer().append("%").append(i).append("U").toString(), formatArgs[i]);
                         }
                     }
                 }
-            } catch (IOException e2) {
+            } catch (IOException e) {
                 langStream = null;
-                str = "E";
+                result = "E";
             }
         }
-        return str;
+        return result;
     }
 
-    private static String replaceAll(String str, String key, String value) {
+    private static String replaceAll(String text, String targetKey, String replacement) {
         int idx;
         do {
-            idx = str.indexOf(key);
+            idx = text.indexOf(targetKey);
             if (idx >= 0) {
-                str = new StringBuffer().append(str.substring(0, idx)).append(value).append(str.substring(key.length() + idx)).toString();
+                text = new StringBuffer().append(text.substring(0, idx)).append(replacement).append(text.substring(targetKey.length() + idx)).toString();
             }
         } while (idx >= 0);
-        return str;
+        return text;
     }
 }

@@ -14,21 +14,21 @@ public final class Mesh3D {
         Graphics3D.render(this.mesh, this.transform);
     }
 
-    public final void translate(float f, float f2, float f3) {
-        if (f < 1.0E-4f && f > -1.0E-4f) {
-            f = 0.0f;
+    public final void translate(float dx, float dy, float dz) {
+        if (dx < 1.0E-4f && dx > -1.0E-4f) {
+            dx = 0.0f;
         }
-        if (f2 < 1.0E-4f && f2 > -1.0E-4f) {
-            f2 = 0.0f;
+        if (dy < 1.0E-4f && dy > -1.0E-4f) {
+            dy = 0.0f;
         }
-        if (f3 < 1.0E-4f && f3 > -1.0E-4f) {
-            f3 = 0.0f;
+        if (dz < 1.0E-4f && dz > -1.0E-4f) {
+            dz = 0.0f;
         }
-        this.transform = Graphics3D.mul(this.transform, Graphics3D.translation(f, f2, f3));
+        this.transform = Graphics3D.mul(this.transform, Graphics3D.translation(dx, dy, dz));
     }
 
-    public final void rotate(float f, float f2, float f3, float f4) {
-        this.transform = Graphics3D.mul(this.transform, Graphics3D.rotation(360.0f * f, f2, f3, f4));
+    public final void rotate(float angleFraction, float axisX, float axisY, float axisZ) {
+        this.transform = Graphics3D.mul(this.transform, Graphics3D.rotation(360.0f * angleFraction, axisX, axisY, axisZ));
     }
 
     public final void setupAppearance() {

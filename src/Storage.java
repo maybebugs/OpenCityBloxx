@@ -27,8 +27,8 @@ public final class Storage {
         return menuId;
     }
 
-    public static int getSetting(int i) {
-        return settings[i];
+    public static int getSetting(int settingIndex) {
+        return settings[settingIndex];
     }
 
     /** Opens record store 'name' (must exist) and returns a stream over record 1, or null. */
@@ -43,20 +43,20 @@ public final class Storage {
         return in;
     }
 
-    public static void setSetting(int i, int value) {
-        settings[i] = value;
+    public static void setSetting(int settingIndex, int value) {
+        settings[settingIndex] = value;
     }
 
-    public static void setText(int i, String str) {
-        texts[i] = str;
+    public static void setText(int textIndex, String text) {
+        texts[textIndex] = text;
     }
 
     public static int getScreenId() {
         return screenId;
     }
 
-    public static int getMenuFlag(int i) {
-        return menuFlags[i];
+    public static int getMenuFlag(int flagIndex) {
+        return menuFlags[flagIndex];
     }
 
     /** Starts buffering a write to record store 'name'; flushed by close(). */
@@ -70,12 +70,12 @@ public final class Storage {
         return out;
     }
 
-    public static void setMenuFlag(int i, int value) {
-        menuFlags[i] = value;
+    public static void setMenuFlag(int flagIndex, int value) {
+        menuFlags[flagIndex] = value;
     }
 
-    public static String getText(int i) {
-        return texts[i];
+    public static String getText(int textIndex) {
+        return texts[textIndex];
     }
 
     /** Closes any open streams; a pending write is committed to RMS. */
@@ -112,11 +112,11 @@ public final class Storage {
         }
     }
 
-    public static void setMenuId(int i) {
-        menuId = i;
+    public static void setMenuId(int id) {
+        menuId = id;
     }
 
-    public static void setScreenId(int i) {
-        screenId = i;
+    public static void setScreenId(int id) {
+        screenId = id;
     }
 }

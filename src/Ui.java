@@ -6,260 +6,263 @@ import jme.Graphics;
 import jme.Image;
 
 public final class Ui {
-    private static int A = -1;
-    private static int[] B = new int[3];
-    private static Font C;
-    private static Font D;
-    private static Font E;
-    private static boolean F;
-    protected static int a = -1;
-    public static Image b;
-    protected static int c = 0;
-    private static String[] d;
-    private static int[] e;
-    private static int f;
-    private static int g = 0;
-    private static boolean h;
-    private static int i;
-    private static Image j;
-    private static boolean k;
-    private static int l = 0;
-    private static long m;
-    private static Image[] n;
-    private static String[][] o;
-    private static int[] p;
-    private static int q;
-    private static int r;
-    private static String[][] s;
-    private static int t = -1;
-    private static int u = -1;
-    private static int v = -1;
-    private static int w = -1;
-    private static int x = -1;
-    private static int y = -1;
-    private static int z = -1;
+    private static int backgroundAlpha = -1;
+    private static int[] colorOverride = new int[3];
+    private static Font headerFont;
+    private static Font bodyFont;
+    private static Font boldSmallFont;
+    private static boolean headerEmpty;
+    protected static int mode = -1;
+    public static Image headerIcon;
+    protected static int cursor = 0;
+    private static String[] headerLines;
+    private static int[] palette;
+    private static int softKeyHeight;
+    private static int textAlign = 0;
+    private static boolean paged;
+    private static int pageIndex;
+    private static Image arrowSprite;
+    private static boolean onLastPage;
+    private static int itemCount = 0;
+    private static long tickerStart;
+    private static Image[] itemIcons;
+    private static String[][] itemLines;
+    private static int[] itemValues;
+    private static int iconMaxHeight;
+    private static int iconMaxWidth;
+    private static String[][] pages;
+    private static int textWidth = -1;
+    private static int boxX = -1;
+    private static int boxY = -1;
+    private static int boxWidth = -1;
+    private static int boxHeight = -1;
+    private static int headerHeight = -1;
+    private static int headerTop = -1;
 
     public static void clearDialog() {
         Ui.dismissDialog();
         Storage.dirty = true;
     }
 
-    /** Scrolls the paged text by delta pages (static void a(int)). */
+    /** Scrolls the paged text by delta pages. */
     public static void update(int delta) {
         boolean atEnd = false;
-        if (h) {
-            i += delta;
-            i = Math.max(0, i);
-            i = Math.min(s.length - 1, i);
-            if (i == s.length - 1) {
+        if (paged) {
+            pageIndex += delta;
+            pageIndex = Math.max(0, pageIndex);
+            pageIndex = Math.min(pages.length - 1, pageIndex);
+            if (pageIndex == pages.length - 1) {
                 atEnd = true;
             }
-            k = atEnd;
+            onLastPage = atEnd;
         }
         Storage.dirty = true;
-        c = Storage.cursor;
+        cursor = Storage.cursor;
     }
 
-    public static void setLayout(int i, int i2, int i3, int i4, int i5, int i6, int[] iArr) {
+    public static void openTextPanel(int x, int y, int width, int height, int alpha, int align, int[] colors) {
         Ui.dismissDialog();
-        a = 3;
-        A = i5;
-        g = i6;
-        u = i;
-        v = i2;
-        w = i3;
-        w = Math.min(w, GameMIDlet.screenWidth - u);
-        x = i4;
-        x = Math.min(x, GameMIDlet.screenHeight - v);
-        t = (w - 16) + 0;
-        if (iArr != null) {
-            for (int i7 = 0; i7 < 3; i7++) {
-                B[i7] = iArr[i7];
+        mode = 3;
+        backgroundAlpha = alpha;
+        textAlign = align;
+        boxX = x;
+        boxY = y;
+        boxWidth = width;
+        boxWidth = Math.min(boxWidth, GameMIDlet.screenWidth - boxX);
+        boxHeight = height;
+        boxHeight = Math.min(boxHeight, GameMIDlet.screenHeight - boxY);
+        textWidth = (boxWidth - 16) + 0;
+        if (colors != null) {
+            for (int k = 0; k < 3; k++) {
+                colorOverride[k] = colors[k];
             }
         }
         Storage.dirty = true;
     }
 
-    public static void setMenuItem(int i, Image image, String str, int i2) {
-        if (a == 1) {
-            if (image != null) {
-                q = Math.max(q, image.getHeight());
-                r = Math.max(r, image.getWidth());
+    public static void setMenuItem(int index, Image icon, String text, int value) {
+        if (mode == 1) {
+            if (icon != null) {
+                iconMaxHeight = Math.max(iconMaxHeight, icon.getHeight());
+                iconMaxWidth = Math.max(iconMaxWidth, icon.getWidth());
             }
-            if (i + 1 > l) {
-                l++;
+            if (index + 1 > itemCount) {
+                itemCount++;
             }
-            n[i] = image;
-            o[i] = Ui.a(str, (w - 24) - r, D);
-            p[i] = i2;
+            itemIcons[index] = icon;
+            itemLines[index] = Ui.wrapLines(text, (boxWidth - 24) - iconMaxWidth, bodyFont);
+            itemValues[index] = value;
         }
     }
 
-    public static void initMenuList(int i, Image image, String str, int i2, int i3, int i4, int i5, int i6, String str2) {
-        l = 0;
+    public static void initMenuList(int count, Image icon, String title, int align, int x, int y, int width, int height, String unused) {
+        itemCount = 0;
         Ui.dismissDialog();
-        n = new Image[i];
-        o = new String[i][];
-        p = new int[i];
-        u = i3;
-        v = i4;
-        w = i5;
-        x = i6;
-        a = 1;
-        g = i2;
-        Ui.a(image, str);
-        m = 0;
+        itemIcons = new Image[count];
+        itemLines = new String[count][];
+        itemValues = new int[count];
+        boxX = x;
+        boxY = y;
+        boxWidth = width;
+        boxHeight = height;
+        mode = 1;
+        textAlign = align;
+        Ui.setHeader(icon, title);
+        tickerStart = 0;
         Storage.dirty = true;
     }
 
-    public static void setTitle(String str) {
-        s = Ui.a(str, (x - 36) - 16, t, D);
-        D.getHeight();
-        if (s.length > 1) {
-            h = true;
-            i = 0;
+    public static void setText(String text) {
+        pages = Ui.wrapPages(text, (boxHeight - 36) - 16, textWidth, bodyFont);
+        bodyFont.getHeight();
+        if (pages.length > 1) {
+            paged = true;
+            pageIndex = 0;
         } else {
-            k = true;
+            onLastPage = true;
         }
         Storage.dirty = true;
     }
 
-    public static void paint(Graphics graphics) {
-        switch (a) {
+    public static void paint(Graphics g) {
+        switch (mode) {
             case 1:
-                Ui.b(graphics);
+                Ui.paintList(g);
                 break;
             case 2:
-                Ui.paintDialog(graphics);
+                Ui.paintDialog(g);
                 break;
             case 3:
-                Ui.paintScrollIndicator(graphics);
+                Ui.paintPanel(g);
                 break;
         }
-        if (F || d == null || d.length == 1) {
+        if (headerEmpty || headerLines == null || headerLines.length == 1) {
             Storage.dirty = false;
         }
     }
 
-    public static void paintArrowIndicator(Graphics graphics, int i, int i2, boolean z) {
-        graphics.setClip(i, i2, 18, 18);
-        graphics.drawImage(j, i, i2, 20);
-        if (z) {
-            graphics.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+    public static void paintUpArrow(Graphics g, int x, int y, boolean resetClip) {
+        g.setClip(x, y, 18, 18);
+        g.drawImage(arrowSprite, x, y, 20);
+        if (resetClip) {
+            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
         }
     }
 
-    /** Paints the paged text popup body (private static void a(Graphics,boolean)). */
-    private static void a(Graphics graphics, boolean z) {
-        int left = u;
-        int right = u + w;
-        int centerX = u + (w / 2);
-        int top = v;
-        int bottom = v + x;
+    /** Paints the paged text popup body. */
+    private static void paintText(Graphics g, boolean showEndMarker) {
+        int left = boxX;
+        int right = boxX + boxWidth;
+        int centerX = boxX + (boxWidth / 2);
+        int top = boxY;
+        int bottom = boxY + boxHeight;
         int y = top + 8;
-        int fontHeight = D.getHeight();
+        int fontHeight = bodyFont.getHeight();
         int textX = left + 8;
         if (Storage.getSetting(4) == 1) {
             textX = right - 8;
         }
-        if (a == 2) {
+        if (mode == 2) {
             textX = Storage.getSetting(4) == 0 ? textX + 8 : textX - 8;
         }
-        graphics.setColor(B[0] == -1 ? e[2] : B[0]);
-        graphics.setFont(D);
-        if (h && i > 0) {
-            Ui.paintArrowIndicator(graphics, centerX - 9, top + 2, false);
+        g.setColor(colorOverride[0] == -1 ? palette[2] : colorOverride[0]);
+        g.setFont(bodyFont);
+        if (paged && pageIndex > 0) {
+            Ui.paintUpArrow(g, centerX - 9, top + 2, false);
         }
         y += 18;
-        graphics.setClip(left, top, right, bottom);
-        for (int line = 0; line < s[i].length; line++) {
-            if (g == 1) {
-                graphics.drawString(s[i][line], centerX, y, 17);
+        g.setClip(left, top, right, bottom);
+        for (int line = 0; line < pages[pageIndex].length; line++) {
+            if (textAlign == 1) {
+                g.drawString(pages[pageIndex][line], centerX, y, 17);
             } else {
                 int anchor = 24;
                 if (Storage.getSetting(4) == 0) {
                     anchor = 20;
                 }
-                graphics.drawString(s[i][line], textX, y, anchor);
+                g.drawString(pages[pageIndex][line], textX, y, anchor);
             }
             y += fontHeight;
         }
-        if (k) {
-            if (z) {
-                Ui.paintProgressBar(graphics, centerX - 9, (bottom - 18) - 1, true);
+        if (onLastPage) {
+            if (showEndMarker) {
+                Ui.paintDownArrow(g, centerX - 9, (bottom - 18) - 1, true);
             }
-        } else if (h) {
-            Ui.paintProgressBar(graphics, centerX - 9, (bottom - 18) - 1, false);
+        } else if (paged) {
+            Ui.paintDownArrow(g, centerX - 9, (bottom - 18) - 1, false);
         }
-        graphics.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
     }
 
-    private static void a(Image image, String str) {
-        F = false;
-        b = image;
-        if (str == null) {
-            d = new String[]{""};
-            F = true;
+    private static void setHeader(Image icon, String text) {
+        headerEmpty = false;
+        headerIcon = icon;
+        if (text == null) {
+            headerLines = new String[]{""};
+            headerEmpty = true;
         } else {
-            int i = GameMIDlet.screenWidth - 6;
-            d = Ui.a(str, b != null ? i - 30 : i - 8, C);
+            int availWidth = GameMIDlet.screenWidth - 6;
+            headerLines = Ui.wrapLines(text, headerIcon != null ? availWidth - 30 : availWidth - 8, headerFont);
         }
-        z = 0;
-        y = 26;
-        if (b != null) {
-            y = Math.max(y, (b.getHeight() + 12) + C.getHeight());
+        headerTop = 0;
+        headerHeight = 26;
+        if (headerIcon != null) {
+            headerHeight = Math.max(headerHeight, (headerIcon.getHeight() + 12) + headerFont.getHeight());
         }
-        v = Math.max(v, z + y);
-        if (w == -1) {
-            w = GameMIDlet.screenWidth;
+        boxY = Math.max(boxY, headerTop + headerHeight);
+        if (boxWidth == -1) {
+            boxWidth = GameMIDlet.screenWidth;
         }
-        w = Math.min(w, GameMIDlet.screenWidth - u);
-        if (x == -1) {
-            x = GameMIDlet.screenHeight;
+        boxWidth = Math.min(boxWidth, GameMIDlet.screenWidth - boxX);
+        if (boxHeight == -1) {
+            boxHeight = GameMIDlet.screenHeight;
         }
-        x = Math.min((GameMIDlet.screenHeight - v) - f, x);
+        boxHeight = Math.min((GameMIDlet.screenHeight - boxY) - softKeyHeight, boxHeight);
         Storage.dirty = true;
     }
 
-    public static void openDialog(Image image, String str, int i, int i2, int i3, int i4, int i5, String str2) {
+    public static void openDialog(Image icon, String text, int align, int x, int y, int width, int height, String unused) {
         Ui.dismissDialog();
-        a = 2;
-        u = i2;
-        v = i3;
-        w = i4;
-        x = i5;
-        A = 255;
-        g = i;
-        Ui.a(image, str);
-        t = (w - 32) + 0;
+        mode = 2;
+        boxX = x;
+        boxY = y;
+        boxWidth = width;
+        boxHeight = height;
+        backgroundAlpha = 255;
+        textAlign = align;
+        Ui.setHeader(icon, text);
+        textWidth = (boxWidth - 32) + 0;
         Storage.dirty = true;
     }
 
-    public static void setColorPalette(int[] iArr) {
-        C = Font.getFont(32, 1, 0);
-        D = Font.getFont(32, 0, 8);
-        E = Font.getFont(32, 1, 8);
-        f = Font.getFont(32, 1, 8).getHeight() + 4;
-        e = iArr;
-        j = Resources.getImage(0);
+    public static void setColorPalette(int[] colors) {
+        headerFont = Font.getFont(32, 1, 0);
+        bodyFont = Font.getFont(32, 0, 8);
+        boldSmallFont = Font.getFont(32, 1, 8);
+        softKeyHeight = Font.getFont(32, 1, 8).getHeight() + 4;
+        palette = colors;
+        arrowSprite = Resources.getImage(0);
         Storage.dirty = true;
     }
 
-    private static String[] a(String str, int i, Font font) {
-        return Ui.a(str, -1, i, font)[0];
+    private static String[] wrapLines(String text, int maxWidth, Font font) {
+        return Ui.wrapPages(text, -1, maxWidth, font)[0];
     }
 
     /* JADX WARNING: inconsistent code. */
     /* Code decompiled incorrectly, please refer to instructions dump. */
     /**
-     * Word-wraps text into pages of lines (private static String[][] a(String,int,int,Font)).
+     * Word-wraps text into pages of lines.
      * Reconstructed from bytecode (decompiler failure).
      *
      * @param text      source text; '\n' = line break, "\\p" = page break
      * @param maxHeight page height in pixels, or -1 for unlimited
      * @param maxWidth  line width in pixels
      */
-    private static String[][] a(String text, int maxHeight, int maxWidth, Font font) {
+    private static String[][] wrapPages(String text, int maxHeight, int maxWidth, Font font) {
+        if (text == null) {
+            return new String[][]{new String[0]};
+        }
         System.currentTimeMillis();
         int len = text.length();
         Vector pages = new Vector();
@@ -424,39 +427,39 @@ public final class Ui {
         return space;
     }
 
-    /** Paints the scrolling list menu (private static void b(Graphics)). Rewritten from bytecode. */
-    private static void b(Graphics graphics) {
-        Ui.paintSelectionCursor(graphics);
+    /** Paints the scrolling list menu. */
+    private static void paintList(Graphics g) {
+        Ui.paintHeader(g);
         if (Storage.dirty) {
-            int rowHeight = Math.max(D.getHeight(), q + 2);
-            graphics.setFont(D);
-            int textX = Storage.getSetting(4) == 1 ? ((u + w) - 16) - r : (u + 16) + r;
-            int iconX = Storage.getSetting(4) == 1 ? (u + w) - 8 : u + 8;
-            if (g == 1) {
-                textX = u + (w >> 1);
+            int rowHeight = Math.max(bodyFont.getHeight(), iconMaxHeight + 2);
+            g.setFont(bodyFont);
+            int textX = Storage.getSetting(4) == 1 ? ((boxX + boxWidth) - 16) - iconMaxWidth : (boxX + 16) + iconMaxWidth;
+            int iconX = Storage.getSetting(4) == 1 ? (boxX + boxWidth) - 8 : boxX + 8;
+            if (textAlign == 1) {
+                textX = boxX + (boxWidth >> 1);
             }
-            int listTop = v + 8;
+            int listTop = boxY + 8;
             int y = listTop;
-            int listHeight = x - 16;
+            int listHeight = boxHeight - 16;
             int visibleRows = listHeight / (rowHeight + 0);
-            if (visibleRows < l) {
+            if (visibleRows < itemCount) {
                 // arrows needed: leave room for the scroll arrow at the top
-                listTop = (v + 18) + 8;
+                listTop = (boxY + 18) + 8;
                 y = listTop;
-                listHeight = x - 52;
+                listHeight = boxHeight - 52;
                 visibleRows = listHeight / (rowHeight + 0);
             }
             int halfRows = (visibleRows - 1) >> 1;
-            int iconYOffset = (rowHeight - q) >> 1;
-            int textYOffset = (rowHeight - D.getHeight()) >> 1;
+            int iconYOffset = (rowHeight - iconMaxHeight) >> 1;
+            int textYOffset = (rowHeight - bodyFont.getHeight()) >> 1;
             int selectedY = rowHeight;
             int totalHeight = 0;
-            for (int k = 0; k < l; k++) {
-                String[] item = o[k];
-                if (k == c) {
+            for (int k = 0; k < itemCount; k++) {
+                String[] item = itemLines[k];
+                if (k == cursor) {
                     selectedY = totalHeight;
                 }
-                int itemHeight = rowHeight + (D.getHeight() * (item.length - 1));
+                int itemHeight = rowHeight + (bodyFont.getHeight() * (item.length - 1));
                 totalHeight += itemHeight;
             }
             int scroll = selectedY - (halfRows * rowHeight);
@@ -465,108 +468,108 @@ public final class Ui {
             scroll = Math.min(scroll, totalHeight - (visibleRows * rowHeight));
             scroll = Math.max(0, scroll);
             y -= scroll;
-            for (int k = 0; k < l; k++) {
-                String[] item = o[k];
-                if (k == c) {
-                    graphics.setColor(e[6]);
+            for (int k = 0; k < itemCount; k++) {
+                String[] item = itemLines[k];
+                if (k == cursor) {
+                    g.setColor(palette[6]);
                     if (Storage.getSetting(4) == 1) {
-                        int hiliteWidth = ((D.stringWidth(o[k][0]) + 16) + r) + 3;
-                        graphics.fillRect(((u + w) - 4) - hiliteWidth, y - 1, hiliteWidth, rowHeight + (D.getHeight() * (item.length - 1)));
+                        int hiliteWidth = ((bodyFont.stringWidth(itemLines[k][0]) + 16) + iconMaxWidth) + 3;
+                        g.fillRect(((boxX + boxWidth) - 4) - hiliteWidth, y - 1, hiliteWidth, rowHeight + (bodyFont.getHeight() * (item.length - 1)));
                     } else {
-                        graphics.fillRect(u + 8, y - 1, w - 16, rowHeight + (D.getHeight() * (item.length - 1)));
+                        g.fillRect(boxX + 8, y - 1, boxWidth - 16, rowHeight + (bodyFont.getHeight() * (item.length - 1)));
                     }
                 }
-                if (p[k] == 2) {
-                    graphics.setColor(e[5]);
+                if (itemValues[k] == 2) {
+                    g.setColor(palette[5]);
                 } else {
-                    graphics.setColor(e[2]);
-                    graphics.setFont(D);
+                    g.setColor(palette[2]);
+                    g.setFont(bodyFont);
                     if (GameMIDlet.getInstance().loadState == 1) {
-                        graphics.setColor(0);
+                        g.setColor(0);
                     }
-                    if (k == c) {
-                        graphics.setColor(e[7]);
+                    if (k == cursor) {
+                        g.setColor(palette[7]);
                         if (GameMIDlet.getInstance().loadState == 1) {
-                            graphics.setColor(16777215);
+                            g.setColor(16777215);
                         }
-                        graphics.setFont(E);
+                        g.setFont(boldSmallFont);
                     }
                 }
                 int anchor = 17;
-                if (g == 0) {
+                if (textAlign == 0) {
                     anchor = Storage.getSetting(4) == 0 ? 20 : 24;
                 }
                 for (int j = 0; j < item.length; j++) {
                     if (y >= listTop && y + rowHeight <= listTop + listHeight) {
-                        if (n[k] != null && j == 0) {
+                        if (itemIcons[k] != null && j == 0) {
                             int offset = 0;
-                            if (g == 1) {
+                            if (textAlign == 1) {
                                 int maxWidth = 0;
                                 for (int m2 = 0; m2 < item.length; m2++) {
-                                    maxWidth = Math.max(maxWidth, D.stringWidth(item[m2]));
+                                    maxWidth = Math.max(maxWidth, bodyFont.stringWidth(item[m2]));
                                 }
-                                offset = textX - ((r + 8) + (maxWidth >> 1));
+                                offset = textX - ((iconMaxWidth + 8) + (maxWidth >> 1));
                             }
-                            if (k == c) {
+                            if (k == cursor) {
                                 offset++;
                             } else {
                                 offset--;
                             }
                             if (Storage.getSetting(4) == 1) {
-                                graphics.drawImage(n[k], iconX - offset, (y + iconYOffset) - 1, 24);
+                                g.drawImage(itemIcons[k], iconX - offset, (y + iconYOffset) - 1, 24);
                             } else {
-                                graphics.drawImage(n[k], iconX + offset, (y + iconYOffset) - 1, 20);
+                                g.drawImage(itemIcons[k], iconX + offset, (y + iconYOffset) - 1, 20);
                             }
                         }
-                        graphics.drawString(item[j], textX, y + textYOffset, anchor);
-                    } else if (k < c) {
+                        g.drawString(item[j], textX, y + textYOffset, anchor);
+                    } else if (k < cursor) {
                         moreAbove = true;
                     } else {
                         moreBelow = true;
                     }
                     if (j < item.length - 1) {
-                        y += D.getHeight();
+                        y += bodyFont.getHeight();
                     }
                 }
                 y += rowHeight;
             }
             if (moreAbove) {
-                Ui.paintArrowIndicator(graphics, (u + (w / 2)) - 9, v + 8, true);
+                Ui.paintUpArrow(g, (boxX + (boxWidth / 2)) - 9, boxY + 8, true);
             }
             if (moreBelow) {
-                Ui.paintProgressBar(graphics, (u + (w / 2)) - 9, ((v + x) - 18) - 8, false);
+                Ui.paintDownArrow(g, (boxX + (boxWidth / 2)) - 9, ((boxY + boxHeight) - 18) - 8, false);
             }
         }
     }
 
     public static int getItemAt(int px, int py) {
-        if (a != 1 || o == null || l <= 0 || D == null) return -1;
-        if (px < u || px > u + w) return -1;
-        int rowHeight = Math.max(q, D.getHeight()) + 2;
-        int listTop = v + 8;
+        if (mode != 1 || itemLines == null || itemCount <= 0 || bodyFont == null) return -1;
+        if (px < boxX || px > boxX + boxWidth) return -1;
+        int rowHeight = Math.max(iconMaxHeight, bodyFont.getHeight()) + 2;
+        int listTop = boxY + 8;
         int y = listTop;
-        int listHeight = x - 16;
+        int listHeight = boxHeight - 16;
         int visibleRows = listHeight / rowHeight;
-        if (visibleRows < l) {
-            listTop = (v + 18) + 8;
+        if (visibleRows < itemCount) {
+            listTop = (boxY + 18) + 8;
             y = listTop;
-            listHeight = x - 52;
+            listHeight = boxHeight - 52;
             visibleRows = listHeight / rowHeight;
         }
         int halfRows = (visibleRows - 1) >> 1;
         int selectedY = rowHeight;
         int totalHeight = 0;
-        for (int k = 0; k < l; k++) {
-            if (k == c) selectedY = totalHeight;
-            int itemHeight = rowHeight + (D.getHeight() * (o[k].length - 1));
+        for (int k = 0; k < itemCount; k++) {
+            if (k == cursor) selectedY = totalHeight;
+            int itemHeight = rowHeight + (bodyFont.getHeight() * (itemLines[k].length - 1));
             totalHeight += itemHeight;
         }
         int scroll = selectedY - (halfRows * rowHeight);
         scroll = Math.min(scroll, totalHeight - (visibleRows * rowHeight));
         scroll = Math.max(0, scroll);
         y -= scroll;
-        for (int k = 0; k < l; k++) {
-            int itemHeight = rowHeight + (D.getHeight() * (o[k].length - 1));
+        for (int k = 0; k < itemCount; k++) {
+            int itemHeight = rowHeight + (bodyFont.getHeight() * (itemLines[k].length - 1));
             if (py >= y - 1 && py < y + itemHeight && py >= listTop && py <= listTop + listHeight) {
                 return k;
             }
@@ -576,188 +579,157 @@ public final class Ui {
     }
 
     public static void setCursor(int index) {
-        c = index;
+        cursor = index;
         Storage.cursor = index;
         Storage.dirty = true;
     }
 
-    public static void paintProgressBar(Graphics graphics, int i, int i2, boolean z) {
-        int i3;
-        Image image;
-        Graphics graphics2;
-        if (z) {
-            i3 = i2 - 36;
-            graphics.setClip(i, i2, 18, 18);
-            image = j;
-            graphics2 = graphics;
-        } else {
-            graphics.setClip(i, i2, 18, 18);
-            image = j;
-            i3 = i2 - 18;
-            graphics2 = graphics;
-        }
-        graphics2.drawImage(image, i, i3, 20);
-        graphics.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+    public static void paintDownArrow(Graphics g, int x, int y, boolean atEnd) {
+        int srcY = atEnd ? (y - 36) : (y - 18);
+        g.setClip(x, y, 18, 18);
+        g.drawImage(arrowSprite, x, srcY, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
     }
 
-    public static boolean isDialogActive() {
-        return k;
+    public static boolean isOnLastPage() {
+        return onLastPage;
     }
 
     private static void dismissDialog() {
-        a = 0;
-        d = null;
-        k = false;
-        i = 0;
-        l = 0;
-        c = 0;
-        b = null;
-        n = null;
-        q = 0;
-        r = 0;
-        o = (String[][]) null;
-        p = null;
-        s = (String[][]) null;
-        t = -1;
-        u = -1;
-        v = -1;
-        w = -1;
-        x = -1;
-        y = -1;
-        z = -1;
-        A = -1;
-        for (int i = 0; i < B.length; i++) {
-            B[i] = -1;
+        mode = 0;
+        headerLines = null;
+        onLastPage = false;
+        pageIndex = 0;
+        itemCount = 0;
+        cursor = 0;
+        headerIcon = null;
+        itemIcons = null;
+        iconMaxHeight = 0;
+        iconMaxWidth = 0;
+        itemLines = (String[][]) null;
+        itemValues = null;
+        pages = (String[][]) null;
+        textWidth = -1;
+        boxX = -1;
+        boxY = -1;
+        boxWidth = -1;
+        boxHeight = -1;
+        headerHeight = -1;
+        headerTop = -1;
+        backgroundAlpha = -1;
+        for (int i = 0; i < colorOverride.length; i++) {
+            colorOverride[i] = -1;
         }
-        h = false;
+        paged = false;
     }
 
-    private static void paintDialog(Graphics graphics) {
-        Ui.paintSelectionCursor(graphics);
+    private static void paintDialog(Graphics g) {
+        Ui.paintHeader(g);
         if (Storage.dirty) {
-            Ui.a(graphics, false);
+            Ui.paintText(g, false);
         }
     }
 
-    private static void paintScrollIndicator(Graphics graphics) {
+    private static void paintPanel(Graphics g) {
         if (Storage.dirty) {
-            int i = u + w;
-            int i2 = v + x;
-            graphics.setClip(u, v, i, i2);
-            if (A != 0) {
-                int[] iArr;
-                int i3;
-                Graphics graphics2;
-                if (B[1] == -1) {
-                    iArr = e;
-                    i3 = 4;
-                    graphics2 = graphics;
-                } else {
-                    iArr = B;
-                    graphics2 = graphics;
-                    i3 = 1;
-                }
-                graphics2.setColor(iArr[i3]);
-                graphics.fillRect(u, v, w, x);
-                if (B[2] == -1) {
-                    iArr = e;
-                    i3 = 8;
-                    graphics2 = graphics;
-                } else {
-                    iArr = B;
-                    graphics2 = graphics;
-                    i3 = 2;
-                }
-                graphics2.setColor(iArr[i3]);
-                graphics.drawLine(u, v, i, v);
-                graphics.drawLine(i, v, i, i2);
-                graphics.drawLine(u, i2, i, i2);
-                graphics.drawLine(u, v, u, i2);
+            int right = boxX + boxWidth;
+            int bottom = boxY + boxHeight;
+            g.setClip(boxX, boxY, right, bottom);
+            if (backgroundAlpha != 0) {
+                int bgColor = (colorOverride[1] == -1) ? palette[4] : colorOverride[1];
+                g.setColor(bgColor);
+                g.fillRect(boxX, boxY, boxWidth, boxHeight);
+                int borderColor = (colorOverride[2] == -1) ? palette[8] : colorOverride[2];
+                g.setColor(borderColor);
+                g.drawLine(boxX, boxY, right, boxY);
+                g.drawLine(right, boxY, right, bottom);
+                g.drawLine(boxX, bottom, right, bottom);
+                g.drawLine(boxX, boxY, boxX, bottom);
             }
-            Ui.a(graphics, true);
+            Ui.paintText(g, true);
         }
     }
 
     /* JADX WARNING: inconsistent code. */
     /* Code decompiled incorrectly, please refer to instructions dump. */
     /** Paints the menu title (icon + title text, scrolling ticker when several titles). Reconstructed from bytecode. */
-    private static void paintSelectionCursor(Graphics graphics) {
-        graphics.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+    private static void paintHeader(Graphics g) {
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
         int x = Storage.getSetting(4) == 1 ? GameMIDlet.screenWidth - 14 : 14;
-        graphics.setColor(e[1]);
-        if (F ? Storage.dirty : ((Storage.dirty || d.length > 1) && b != null)) {
-            graphics.drawImage(b, GameMIDlet.screenWidth >> 1, 6 + z, 17);
+        g.setColor(palette[1]);
+        if (headerEmpty ? Storage.dirty : ((Storage.dirty || headerLines.length > 1) && headerIcon != null)) {
+            g.drawImage(headerIcon, GameMIDlet.screenWidth >> 1, 6 + headerTop, 17);
         }
-        if (d == null) {
+        if (headerLines == null) {
             return;
         }
-        int textY = z + ((y - C.getHeight()) >> 1);
-        if (b != null) {
-            textY += (b.getHeight() + C.getHeight()) >> 1;
+        int textY = headerTop + ((headerHeight - headerFont.getHeight()) >> 1);
+        if (headerIcon != null) {
+            textY += (headerIcon.getHeight() + headerFont.getHeight()) >> 1;
         }
-        graphics.setColor(e[0]);
-        graphics.setFont(C);
+        g.setColor(palette[0]);
+        g.setFont(headerFont);
         int anchor = 20;
         if (Storage.getSetting(4) == 1) {
             anchor = 24;
         }
-        if (b == null && g == 1) {
+        if (headerIcon == null && textAlign == 1) {
             x = GameMIDlet.screenWidth >> 1;
             anchor = 17;
         }
-        if (b != null && Storage.getSetting(4) == 0) {
+        if (headerIcon != null && Storage.getSetting(4) == 0) {
             x = GameMIDlet.screenWidth >> 1;
             anchor = 17;
         }
-        if (b != null && Storage.getSetting(4) == 1) {
+        if (headerIcon != null && Storage.getSetting(4) == 1) {
             x = GameMIDlet.screenWidth >> 1;
             anchor = 17;
         }
-        if (d.length > 1) {
+        if (headerLines.length > 1) {
             long now = System.currentTimeMillis();
-            if (m == 0) {
-                m = now;
+            if (tickerStart == 0) {
+                tickerStart = now;
             }
-            int elapsed = (int) (now - m);
-            int t = elapsed % ((1500 * d.length) + 500);
+            int elapsed = (int) (now - tickerStart);
+            int t = elapsed % ((1500 * headerLines.length) + 500);
             int index = t / 1500;
             int phase = t % 1500;
-            if (index < d.length) {
+            if (index < headerLines.length) {
                 phase -= 1000;
             } else {
                 index = -1;
             }
-            int clipX = graphics.getClipX();
-            int clipY = graphics.getClipY();
-            int clipW = graphics.getClipWidth();
-            int clipH = graphics.getClipHeight();
-            graphics.setClip(0, z, GameMIDlet.screenWidth, y);
+            int clipX = g.getClipX();
+            int clipY = g.getClipY();
+            int clipW = g.getClipWidth();
+            int clipH = g.getClipHeight();
+            g.setClip(0, headerTop, GameMIDlet.screenWidth, headerHeight);
             String current = null;
             if (index >= 0) {
-                current = d[index];
+                current = headerLines[index];
             }
             if (phase < 0) {
                 if (current != null) {
-                    graphics.drawString(current, x, textY, anchor);
+                    g.drawString(current, x, textY, anchor);
                 }
             } else {
                 String next = null;
-                if (index + 1 < d.length) {
-                    next = d[index + 1];
+                if (index + 1 < headerLines.length) {
+                    next = headerLines[index + 1];
                 }
-                int shift = (y * phase) / 500;
+                int shift = (headerHeight * phase) / 500;
                 if (current != null) {
-                    graphics.drawString(current, x, textY - shift, anchor);
+                    g.drawString(current, x, textY - shift, anchor);
                 }
                 if (next != null) {
-                    graphics.drawString(next, x, (textY + y) - shift, anchor);
+                    g.drawString(next, x, (textY + headerHeight) - shift, anchor);
                 }
             }
-            graphics.setClip(clipX, clipY, clipW, clipH);
+            g.setClip(clipX, clipY, clipW, clipH);
             return;
         }
         if (Storage.dirty) {
-            graphics.drawString(d[0], x, textY, anchor);
+            g.drawString(headerLines[0], x, textY, anchor);
         }
     }
 }

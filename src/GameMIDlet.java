@@ -10,23 +10,23 @@ import jme.MIDlet;
 public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     public static int screenWidth;
     public static int screenHeight;
-    private static GameMIDlet m;
+    private static GameMIDlet instance;
     protected HighScores highScores;
     public boolean painting;
     public int loadState = -1;
     public Thread thread;
-    private int a = -1;
-    private long b = -1;
-    private int c = -1;
-    private Screen d;
-    private boolean e;
-    private boolean f;
-    private boolean g;
-    private boolean h;
-    private boolean i;
-    private boolean j;
-    private boolean k;
-    private boolean l = true;
+    private int elapsedMs = -1;
+    private long lastFrameTime = -1;
+    private int dtSum = -1;
+    private Screen currentScreen;
+    private boolean exitRequested;
+    private boolean started;
+    private boolean destroyedExternally;
+    private boolean paused;
+    private boolean resourcesReleased;
+    private boolean forceFullPaint;
+    private boolean loading;
+    private boolean soundAllowed = true;
     public int dtIndex = -1;
     public int[] dtHistory;
     protected ICanvas canvas;
@@ -35,7 +35,7 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     protected MenuController menu;
 
     public GameMIDlet() {
-        m = this;
+        instance = this;
         try {
             this.dtHistory = new int[8];
             resetTiming();
@@ -48,14 +48,14 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
             Storage.setSetting(0, 1);
             this.vibra = PlatformFactory.createVibra();
             this.menu = new MenuController(this.canvas);
-            DataInputStream a = Storage.openRead("settings");
-            if (a != null) {
-                Storage.setSetting(0, a.readInt());
-                Storage.setSetting(3, a.readInt());
+            DataInputStream dis = Storage.openRead("settings");
+            if (dis != null) {
+                Storage.setSetting(0, dis.readInt());
+                Storage.setSetting(3, dis.readInt());
                 if (Storage.getSetting(3) == 0) {
                     this.sound.setEnabled(false);
                 }
-                a.close();
+                dis.close();
             }
             Storage.close();
             Resources.init();
@@ -65,55 +65,55 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
             this.highScores.init(this, this.menu, this.canvas);
             Storage.setMenuFlag(7, 1);
             Storage.setMenuFlag(6, 1);
-        } catch (Throwable th) {
-            th.printStackTrace();
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
-    private void handleLoadingKeyPressed(int i, int i2) {
+    private void handleLoadingKeyPressed(int keyCode, int gameAction) {
         switch (this.loadState) {
             case 3:
-                keyPressed(i, i2);
+                keyPressed(keyCode, gameAction);
                 return;
             default:
                 return;
         }
     }
 
-    private void paintLoadingOverlay(Graphics graphics) {
+    private void paintLoadingOverlay(Graphics g) {
         switch (this.loadState) {
             case 3:
-                paintLoading(graphics);
+                paintLoading(g);
                 return;
             default:
                 return;
         }
     }
 
-    private boolean processLoading(int i, int i2) {
+    private boolean processLoading(int keyCode, int gameAction) {
         Ui.update(0);
         switch (this.loadState) {
             case -1:
                 onLoadBeginWrapper();
                 this.loadState = 3;
-                return processLoading(i, i2);
+                return processLoading(keyCode, gameAction);
             case 3:
                 Storage.setSetting(4, Resources.getString(152).compareTo("1") == 0 ? 1 : 0);
-                if (!this.l) {
+                if (!this.soundAllowed) {
                     this.sound.setEnabled(false);
                 }
-                if (loadStep(i2)) {
+                if (loadStep(gameAction)) {
                     return true;
                 }
-                if (!this.l) {
+                if (!this.soundAllowed) {
                     if (Storage.getSetting(3) == 1) {
                         this.sound.setEnabled(true);
                     }
-                    this.l = true;
+                    this.soundAllowed = true;
                 }
                 onLoadEndWrapper();
                 this.loadState = -1;
-                this.k = false;
+                this.loading = false;
                 Storage.setScreenId(0);
                 return false;
             default:
@@ -122,9 +122,9 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     }
 
     private void releaseResources() {
-        if (!this.i) {
+        if (!this.resourcesReleased) {
             Resources.close();
-            this.i = true;
+            this.resourcesReleased = true;
         }
     }
 
@@ -139,21 +139,21 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     private int calculateDeltaTime() {
         int i = 500;
         long currentTimeMillis = System.currentTimeMillis();
-        int i2 = (int) (currentTimeMillis - this.b);
-        this.a += i2;
-        this.b = currentTimeMillis;
+        int i2 = (int) (currentTimeMillis - this.lastFrameTime);
+        this.elapsedMs += i2;
+        this.lastFrameTime = currentTimeMillis;
         if (i2 <= 500) {
             i = i2;
         }
-        this.c -= this.dtHistory[this.dtIndex];
-        this.c += i;
+        this.dtSum -= this.dtHistory[this.dtIndex];
+        this.dtSum += i;
         this.dtHistory[this.dtIndex] = i;
         this.dtIndex = (this.dtIndex + 1) & 7;
-        return this.c >> 3;
+        return this.dtSum >> 3;
     }
 
     private Screen getActiveScreen() {
-        if (this.k) {
+        if (this.loading) {
             return null;
         }
         switch (Storage.getScreenId()) {
@@ -164,26 +164,26 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
             case 2:
                 return this.highScores;
             case 3:
-                return this.d;
+                return this.currentScreen;
             case 4:
-                this.e = true;
+                this.exitRequested = true;
                 return null;
             case 6:
-                return this.d;
+                return this.currentScreen;
             default:
-                return this.d;
+                return this.currentScreen;
         }
     }
 
     public static GameMIDlet getInstance() {
-        return m;
+        return instance;
     }
 
     private static void saveSettingsRecord() throws Exception {
-        DataOutputStream b = Storage.openWrite("settings");
-        b.writeInt(Storage.getSetting(0));
-        b.writeInt(Storage.getSetting(3));
-        b.close();
+        DataOutputStream dos = Storage.openWrite("settings");
+        dos.writeInt(Storage.getSetting(0));
+        dos.writeInt(Storage.getSetting(3));
+        dos.close();
         Storage.close();
     }
 
@@ -191,66 +191,66 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
 
     public abstract void commandAction(Command command);
 
-    protected abstract void paintLoading(Graphics graphics);
+    protected abstract void paintLoading(Graphics g);
 
     protected abstract void onPause();
 
-    public abstract void keyPressed(int i, int i2);
+    public abstract void keyPressed(int keyCode, int gameAction);
 
     public final void handleCommand(Command command) {
-        if (this.d != null) {
-            this.d.commandAction(command);
-        } else if (this.k && this.loadState == 3) {
+        if (this.currentScreen != null) {
+            this.currentScreen.commandAction(command);
+        } else if (this.loading && this.loadState == 3) {
             commandAction(command);
             handleLoadingKeyPressed(53, 8);
         }
     }
 
-    protected abstract void paintBackground(Graphics graphics);
+    protected abstract void paintBackground(Graphics g);
 
     protected abstract void saveGame();
 
     protected abstract void saveSettings();
 
-    public final void paintCanvas(Graphics graphics) {
+    public final void paintCanvas(Graphics g) {
         if (!this.painting) {
             return;
         }
-        if (this.d != null) {
-            if (this.d != this && Storage.dirty) {
-                paintBackground(graphics);
+        if (this.currentScreen != null) {
+            if (this.currentScreen != this && Storage.dirty) {
+                paintBackground(g);
             }
-            this.d.paint(graphics, this.j);
-        } else if (this.k) {
-            paintLoadingOverlay(graphics);
+            this.currentScreen.paint(g, this.forceFullPaint);
+        } else if (this.loading) {
+            paintLoadingOverlay(g);
         }
     }
 
-    protected abstract boolean loadStep(int i);
+    protected abstract boolean loadStep(int step);
 
-    protected void destroyApp(boolean z) {
+    protected void destroyApp(boolean unconditional) {
         try {
-            this.g = true;
-            this.e = true;
+            this.destroyedExternally = true;
+            this.exitRequested = true;
             if (this.thread != null) {
                 this.thread.join();
                 this.thread = null;
             }
-        } catch (Throwable th) {
+        } catch (Throwable t) {
         }
     }
 
     protected abstract void onLoad();
 
-    public void keyReleasedRaw(int i) {
-        if (this.d != null) {
-            this.canvas.getGameAction(i);
+    public void keyReleasedRaw(int keyCode) {
+        if (this.currentScreen != null) {
+            this.canvas.getGameAction(keyCode);
         }
     }
 
-    public abstract String formatNumber(int i);
+    public abstract String formatNumber(int number);
 
-    protected abstract void updateBackground(int i);
+    protected abstract void updateBackground(int dt);
 
     protected abstract void onLoadBegin();
 
@@ -258,22 +258,22 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
 
     protected abstract void onMenuTick();
 
-    public final void keyPressedRaw(int i) {
+    public final void keyPressedRaw(int keyCode) {
         int i2 = 0;
         try {
-            i2 = this.canvas.getGameAction(i);
+            i2 = this.canvas.getGameAction(keyCode);
         } catch (Exception e) {
         }
-        if (this.d != null) {
-            this.d.keyPressed(i, i2);
-        } else if (this.k) {
-            handleLoadingKeyPressed(i, i2);
+        if (this.currentScreen != null) {
+            this.currentScreen.keyPressed(keyCode, i2);
+        } else if (this.loading) {
+            handleLoadingKeyPressed(keyCode, i2);
         }
     }
 
-    public final void keyRepeatedRaw(int i) {
-        if (this.d != null) {
-            this.canvas.getGameAction(i);
+    public final void keyRepeatedRaw(int keyCode) {
+        if (this.currentScreen != null) {
+            this.canvas.getGameAction(keyCode);
         }
     }
 
@@ -282,57 +282,57 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
     protected void pauseApp() {
         try {
             this.sound.stopAll();
-            if (!(!this.k || this.loadState == 2 || this.loadState == 1)) {
-                this.l = false;
+            if (!(!this.loading || this.loadState == 2 || this.loadState == 1)) {
+                this.soundAllowed = false;
                 this.sound.setEnabled(false);
             }
-            this.h = true;
+            this.paused = true;
             onPause();
-        } catch (Throwable th) {
+        } catch (Throwable t) {
         }
     }
 
     protected final void resume() {
         try {
             Storage.dirty = true;
-            this.b = System.currentTimeMillis();
-            this.h = false;
+            this.lastFrameTime = System.currentTimeMillis();
+            this.paused = false;
             if (this.loadState != -1) {
                 Ui.update(0);
             }
-        } catch (Throwable th) {
+        } catch (Throwable t) {
         }
     }
 
     public void run() {
-        while (!this.e) {
+        while (!this.exitRequested) {
             long frameStart = System.currentTimeMillis();
             try {
-                if (!this.h) {
+                if (!this.paused) {
                     int i = calculateDeltaTime();
-                    this.d = getActiveScreen();
-                    if (this.d != null) {
-                        this.d.onModeChange();
+                    this.currentScreen = getActiveScreen();
+                    if (this.currentScreen != null) {
+                        this.currentScreen.onModeChange();
                         Screen p = getActiveScreen();
-                        if (this.d != p) {
+                        if (this.currentScreen != p) {
                             if (p != null) {
                                 p.onEnter();
                                 resetTiming();
                             }
-                            this.d = p;
-                        } else if (this.d == this.menu) {
+                            this.currentScreen = p;
+                        } else if (this.currentScreen == this.menu) {
                             onMenuTick();
                         }
-                        if (!(this.e || this.h)) {
-                            if (this.d != this) {
+                        if (!(this.exitRequested || this.paused)) {
+                            if (this.currentScreen != this) {
                                 updateBackground(i);
                             }
-                            this.d.update(i, this.a);
+                            this.currentScreen.update(i, this.elapsedMs);
                             repaintNow();
                         }
-                    } else if (this.k) {
-                        boolean d = processLoading(i, this.a);
-                        if (!(this.e || this.h || !d)) {
+                    } else if (this.loading) {
+                        boolean d = processLoading(i, this.elapsedMs);
+                        if (!(this.exitRequested || this.paused || !d)) {
                             repaintNow();
                         }
                     }
@@ -345,8 +345,8 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
                     Thread.sleep(wait < 2 ? 2 : wait);
                 } catch (Exception e) {
                 }
-            } catch (Throwable th) {
-                th.printStackTrace();
+            } catch (Throwable t) {
+                t.printStackTrace();
                 try {
                     Thread.sleep(10);
                 } catch (InterruptedException ignored) {
@@ -354,13 +354,13 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
             }
         }
         try {
-            if (this.e) {
+            if (this.exitRequested) {
                 this.sound.stopAll();
                 saveSettingsRecord();
                 saveSettings();
                 saveGame();
                 releaseResources();
-                if (!this.g) {
+                if (!this.destroyedExternally) {
                     notifyDestroyed();
                 }
             }
@@ -378,42 +378,42 @@ public abstract class GameMIDlet extends MIDlet implements Runnable, Screen {
 
     protected void startApp() {
         try {
-            if (this.f) {
+            if (this.started) {
                 resume();
                 return;
             }
-            this.k = true;
+            this.loading = true;
             onInit();
             onLoad();
             this.canvas.setMidlet(this);
             this.canvas.setActive(true);
             this.thread = new Thread(this, "game-loop");
             this.thread.start();
-            this.f = true;
-        } catch (Throwable th) {
-            th.printStackTrace();
+            this.started = true;
+        } catch (Throwable t) {
+            t.printStackTrace();
         }
     }
 
     public final void fullRepaint() {
-        this.j = true;
+        this.forceFullPaint = true;
         repaintNow();
-        this.j = false;
+        this.forceFullPaint = false;
     }
 
     protected final void resetTiming() {
         int i = 0;
-        this.a = 0;
-        this.b = System.currentTimeMillis();
+        this.elapsedMs = 0;
+        this.lastFrameTime = System.currentTimeMillis();
         this.dtIndex = 0;
         while (i < 8) {
             this.dtHistory[i] = 40;
             i++;
         }
-        this.c = 320;
+        this.dtSum = 320;
     }
 
     public Screen getCurrentScreen() {
-        return this.d;
+        return this.currentScreen;
     }
 }

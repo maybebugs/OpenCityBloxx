@@ -20,11 +20,11 @@ public final class SoundPlayer implements Player.Listener {
         }
     }
 
-    private void startPlayer(int i, int i2) {
-        if (this.enabled && i != -1) {
+    private void startPlayer(int resourceId, int loopCount) {
+        if (this.enabled && resourceId != -1) {
             try {
-                this.player = new Player(new ByteArrayInputStream(Resources.getBytes(i)));
-                this.player.setLoopCount(i2);
+                this.player = new Player(new ByteArrayInputStream(Resources.getBytes(resourceId)));
+                this.player.setLoopCount(loopCount);
                 this.player.addPlayerListener(this);
                 this.player.prefetch();
                 this.player.start();
@@ -67,35 +67,35 @@ public final class SoundPlayer implements Player.Listener {
         stopLoopIfNeeded();
     }
 
-    public final void play(int i, int i2) {
-        if (this.enabled && i != -1) {
+    public final void play(int resourceId, int loopCount) {
+        if (this.enabled && resourceId != -1) {
             closeIfOwned();
             this.ownsPlayer = true;
-            startPlayer(i, i2);
+            startPlayer(resourceId, loopCount);
         }
     }
 
-    public final void preload(int i, boolean z) {
-        if (!this.preloaded.containsKey(Integer.valueOf(i)) && z) {
+    public final void preload(int resourceId, boolean load) {
+        if (!this.preloaded.containsKey(Integer.valueOf(resourceId)) && load) {
             try {
-                this.tempPlayer = new Player(new ByteArrayInputStream(Resources.getBytes(i)));
+                this.tempPlayer = new Player(new ByteArrayInputStream(Resources.getBytes(resourceId)));
                 this.tempPlayer.realize();
                 this.tempPlayer.prefetch();
-                this.preloaded.put(Integer.valueOf(i), this.tempPlayer);
+                this.preloaded.put(Integer.valueOf(resourceId), this.tempPlayer);
             } catch (Exception e) {
             }
         }
     }
 
-    public final void setEnabled(boolean z) {
-        this.enabled = z;
+    public final void setEnabled(boolean enabled) {
+        this.enabled = enabled;
         if (!this.enabled) {
             stopAll();
         }
     }
 
-    public final void playerUpdate(Player player, String str, Object obj) {
-        if (str != "endOfMedia" || player != this.loopPlayer) {
+    public final void playerUpdate(Player source, String event, Object data) {
+        if (event != "endOfMedia" || source != this.loopPlayer) {
             return;
         }
         if (this.loopCount == 0) {

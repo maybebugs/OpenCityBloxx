@@ -1,47 +1,34 @@
 # Verification status
 
-## Rewritten from bytecode (decompiler failed or was wrong) - logic follows the original
-- `Resources.lookupString` (was `g.b`) - interpreted from bytecode; all 161 ids -> `docs/STRING_IDS.md`
-- `Ui.wrap` (`i.a(String,int,int,Font)`), `Ui.e(Graphics)` (title ticker), `Ui.b(Graphics)` (list painter),
-  `Ui.a(Graphics,boolean)` (paged text), `Ui.a(int)` (scroll) - the decompiler mixed locals with static fields
-- `MenuController.d()` / `d(int)` (menu data parser), name-entry listener
-- `HighScores.b()`, `HighScores.a(Graphics,int,boolean)`, score insertion
-- `GameMIDlet.run` tail (try/catch), `Renderer3D.lookAt` (parameter/field clash)
-- `CityMode.loadState/saveState` (field order verified against bytecode), `CityMode.h()` (link extents),
-  `CityMode.paint` cursorCol sites, `CityMode.update` (dt vs cursorCol), `CityMode.startPlacement`
-- `House.y()` (camera ease/shake; decompiler failure), `House.F()` (drop/landing/combo/score), `House.s(int)` (block physics),
-  `House.a(String,Font,int)` (line wrap), `House()` constructor, `House.e(Graphics)`, `House.j(Graphics)` tail,
-  `House.v()`, `House.paintBackground`, I()/a(boolean)/save/load static-field clashes
+Everything below was measured, not assumed. "Original" means the decompiled sources as first committed
+(they compile to the same 53 classes); it is NOT the untouched game JAR, which was not available.
 
-## NOT verified - treat as decompiler output
-- Every other method of `House` (about 90) and `CityMode`, `Ui`, `HighScores`, `MenuController`, `SoundPlayer`, `Renderer3D`.
-  Field-access cross-check against bytecode flagged no further mismatches, but branch structure was not compared.
-- `Resources.openStream`: try/catch placement is inferred.
-- **18 sites marked `FIXME(bytecode)`**: the decompiler dropped a branch, so a local is initialised to a default
-  (0/false/null) just to compile. The value on that path is NOT original:
+## 1. Renames are behaviour-neutral (proven)
+`tools/verify/bccheck.py` compiles the original and the current tree, aligns every field and method by
+declaration order, maps old names to new names, and compares every instruction of every method
+(opcodes, constants, branch structure, field/method references).
 
-```
-out/CityBloxx_reconstructed/src/CityMode.java:213: int i3 = 0; // FIXME(bytecode): decompiler dropped a branch, value on
-out/CityBloxx_reconstructed/src/CityMode.java:473: Image image2 = null; // FIXME(bytecode): decompiler dropped a branch,
-out/CityBloxx_reconstructed/src/CityMode.java:474: Graphics graphics3 = null; // FIXME(bytecode): decompiler dropped a b
-out/CityBloxx_reconstructed/src/CityMode.java:672: int i3 = 0; // FIXME(bytecode): decompiler dropped a branch, value on
-out/CityBloxx_reconstructed/src/CityMode.java:674: String message = null; // FIXME(bytecode): decompiler dropped a branc
-out/CityBloxx_reconstructed/src/CityMode.java:800: boolean z = false; // FIXME(bytecode): decompiler dropped a branch, v
-out/CityBloxx_reconstructed/src/House.java:1556: Mesh3D dVar = null; // FIXME(bytecode): decompiler dropped a branch, va
-out/CityBloxx_reconstructed/src/House.java:2009: int i3 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:2031: int i8 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:2032: Graphics graphics2 = null; // FIXME(bytecode): decompiler dropped a bra
-out/CityBloxx_reconstructed/src/House.java:2122: int i2 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:2628: int i5 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:2629: int[] iArr2 = null; // FIXME(bytecode): decompiler dropped a branch, va
-out/CityBloxx_reconstructed/src/House.java:2630: int i6 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:2775: int[] iArr3 = null; // FIXME(bytecode): decompiler dropped a branch, va
-out/CityBloxx_reconstructed/src/House.java:2963: int i3 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-out/CityBloxx_reconstructed/src/House.java:3144: Image image = null; // FIXME(bytecode): decompiler dropped a branch, va
-out/CityBloxx_reconstructed/src/House.java:3250: int i2 = 0; // FIXME(bytecode): decompiler dropped a branch, value on t
-```
+Result: **53/53 classes identical**, 508 members renamed, 0 differing methods.
+Only `House.updateBlockPhysics` is excluded (see 2) plus the added constants/helper (`BLOCK_*`, `PHASE_*`,
+`GAME_MODE_*`, `easeAngle`, ...). Replacing literals by `static final` constants is also covered: constants
+inline to the same bytecode.
 
-## Names
-Only the members listed in `tools/renames.txt` were renamed. Most `House`/`CityMode` fields keep their obfuscated
-names (e.g. `bs`, `bt`, `cg`) because their meaning was not established. Known: `House.e` mode, `House.f` state,
-`CityMode.population/level/grid/cursorCol/cursorRow/levelThresholds`.
+## 2. Rewritten logic: `House.updateBlockPhysics` (tested, not proven)
+Rewritten by hand from the decompiled code (named states, constants, `easeAngle` helper).
+`tools/verify/Diff2.java` loads the original and new `House` in separate class loaders, applies identical random
+game states, runs one frame at a time and compares **every static primitive/array field** and any exception.
+
+* 30,000 trials / 135,265 frames: **0 mismatches** (roof entry 136x, round over 206x, debris spawn, miss, re-hang).
+* Sensitivity check, 6 deliberately broken variants (gravity 200->201, re-hang 400->401, return stop 512->511,
+  roof trigger off by one, x-velocity divisor, swapped side-effect order): **6/6 detected**.
+* Limits: ~10% of frames throw (random states outside valid ranges); both versions throw identically but those
+  frames test little. Random states are not real gameplay.
+
+## 3. What is NOT verified
+* The old claim of 18 `FIXME(bytecode)` placeholder sites is stale: no FIXME markers remain in the source, but
+  placeholder-style locals (`int i3 = 0;`, `Image image = null;`, ...) are still there. I inspected five of them
+  (render `f(Graphics)`, `paintLoading`, `keyPressed`/`b(int)`, `update`, `t(int)`): each default is either
+  null-guarded or overwritten on every path, so they look benign. Not proven. Resolving them needs the
+  original `.class` files.
+* Names are interpretations. See `docs/NAMING_NOTES.md` for corrections made and names that are inferred.
+* Rendering code was only checked for bytecode equivalence with the original, not rewritten.

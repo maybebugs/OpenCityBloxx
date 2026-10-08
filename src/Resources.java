@@ -25,17 +25,17 @@ public final class Resources {
     private Resources() {
     }
 
-    /** Looks up string id and substitutes args. Never throws. (a(int,String[])) */
-    public static synchronized String getString(int id, String[] args) {
-        String str;
+    /** Looks up string id and substitutes args. Never throws. */
+    public static synchronized String getString(int resourceId, String[] formatArgs) {
+        String result;
         synchronized (Resources.class) {
-            str = null;
+            result = null;
             try {
-                str = lookupString(id, args);
+                result = lookupString(resourceId, formatArgs);
             } catch (Exception e) {
             }
         }
-        return str;
+        return result;
     }
 
     /** Opens the "r0" index and reads the offset table. */
@@ -63,29 +63,29 @@ public final class Resources {
     }
 
     /** Reads the raw bytes of resource 'id' (sequential reads reuse the open stream). */
-    public static byte[] getBytes(int id) {
+    public static byte[] getBytes(int resourceId) {
         byte[] data = null;
-        if (id != -1) {
-            int archive = (Integer.MAX_VALUE & id) >> 16;
+        if (resourceId != -1) {
+            int archive = (Integer.MAX_VALUE & resourceId) >> 16;
             try {
                 DataInputStream stream;
-                if (streamPos == -2 || offsets[id & 32767] < streamPos
+                if (streamPos == -2 || offsets[resourceId & 32767] < streamPos
                         || !archiveName.equals(new StringBuffer().append("r").append(archive).toString())
-                        || (id & Integer.MIN_VALUE) != 0) {
+                        || (resourceId & Integer.MIN_VALUE) != 0) {
                     if (archiveStream != null) {
                         archiveStream.close();
                         archiveStream = null;
                     }
                     archiveName = new StringBuffer().append("r").append(archive).toString();
-                    stream = openStream(id);
+                    stream = openStream(resourceId);
                 } else {
-                    archiveStream.skipBytes(offsets[id & 32767] - streamPos);
+                    archiveStream.skipBytes(offsets[resourceId & 32767] - streamPos);
                     stream = archiveStream;
                 }
-                data = new byte[sizeOf(id)];
+                data = new byte[sizeOf(resourceId)];
                 stream.read(data);
-                if ((id & Integer.MIN_VALUE) == 0) {
-                    streamPos = offsets[id & 32767] + data.length;
+                if ((resourceId & Integer.MIN_VALUE) == 0) {
+                    streamPos = offsets[resourceId & 32767] + data.length;
                     archiveStream = stream;
                 } else {
                     streamPos = -2;
@@ -98,15 +98,15 @@ public final class Resources {
     }
 
     /** Opens a stream positioned at the start of resource 'id'. */
-    public static DataInputStream openStream(int id) {
+    public static DataInputStream openStream(int resourceId) {
         DataInputStream stream;
-        if (id != -1) {
+        if (resourceId != -1) {
             StringBuffer name;
             int number;
-            if ((id & Integer.MIN_VALUE) != 0) {
+            if ((resourceId & Integer.MIN_VALUE) != 0) {
                 try {
                     name = new StringBuffer().append("");
-                    number = id & 32767;
+                    number = resourceId & 32767;
                 } catch (Exception e) {
                     stream = null;
                     streamPos = -2;
@@ -114,13 +114,13 @@ public final class Resources {
                 }
             } else {
                 name = new StringBuffer().append("r");
-                number = (Integer.MAX_VALUE & id) >> 16;
+                number = (Integer.MAX_VALUE & resourceId) >> 16;
             }
             stream = new DataInputStream(instance.getClass().getResourceAsStream(name.append(number).toString()));
-            if ((id & Integer.MIN_VALUE) == 0) {
+            if ((resourceId & Integer.MIN_VALUE) == 0) {
                 try {
-                    stream.skipBytes(offsets[id & 32767]);
-                } catch (Exception e2) {
+                    stream.skipBytes(offsets[resourceId & 32767]);
+                } catch (Exception e) {
                 }
             }
         } else {
@@ -137,23 +137,23 @@ public final class Resources {
      * through, some build "key name" arguments (%U = soft key / '5' key label) when the
      * caller gave none, and ids 34/55 prepend the '5' key name to args[0].
      */
-    private static String lookupString(int id, String[] args) {
+    private static String lookupString(int resourceId, String[] formatArgs) {
         int langIndex = -1;
         String[] langArgs = null;
         ICanvas canvas = GameMIDlet.getInstance().canvas;
-        switch (id) {
+        switch (resourceId) {
             case 0:
                 langIndex = 30;
                 break;
             case 2:
                 langIndex = 1;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(53)};
                 }
                 break;
             case 3:
                 langIndex = 0;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(53)};
                 }
                 break;
@@ -192,8 +192,8 @@ public final class Resources {
                 break;
             case 34:
                 langIndex = 23;
-                if (args != null) {
-                    langArgs = new String[]{canvas.getKeyName(53), args[0]};
+                if (formatArgs != null) {
+                    langArgs = new String[]{canvas.getKeyName(53), formatArgs[0]};
                 }
                 break;
             case 35:
@@ -207,13 +207,13 @@ public final class Resources {
                 break;
             case 38:
                 langIndex = 7;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(53)};
                 }
                 break;
             case 39:
                 langIndex = 19;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(52), canvas.getKeyName(54), canvas.getKeyName(50), canvas.getKeyName(56), canvas.getKeyName(53)};
                 }
                 break;
@@ -222,18 +222,18 @@ public final class Resources {
                 break;
             case 41:
                 langIndex = 8;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 42:
                 langIndex = 9;
                 break;
             case 43:
                 langIndex = 67;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 44:
                 langIndex = 68;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 45:
                 langIndex = 69;
@@ -243,7 +243,7 @@ public final class Resources {
                 break;
             case 47:
                 langIndex = 14;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(50), canvas.getKeyName(56)};
                 }
                 break;
@@ -258,23 +258,23 @@ public final class Resources {
                 break;
             case 51:
                 langIndex = 20;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 52:
                 langIndex = 13;
                 break;
             case 53:
                 langIndex = 66;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 54:
                 langIndex = 3;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 55:
                 langIndex = 21;
-                if (args != null) {
-                    langArgs = new String[]{canvas.getKeyName(53), args[0]};
+                if (formatArgs != null) {
+                    langArgs = new String[]{canvas.getKeyName(53), formatArgs[0]};
                 }
                 break;
             case 56:
@@ -285,32 +285,32 @@ public final class Resources {
                 break;
             case 58:
                 langIndex = 10;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 59:
                 langIndex = 11;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 60:
                 langIndex = 12;
                 break;
             case 62:
                 langIndex = 54;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 63:
                 langIndex = 55;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 64:
                 langIndex = 50;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(53)};
                 }
                 break;
             case 65:
                 langIndex = 51;
-                if (args == null) {
+                if (formatArgs == null) {
                     langArgs = new String[]{canvas.getKeyName(53)};
                 }
                 break;
@@ -319,14 +319,14 @@ public final class Resources {
                 break;
             case 67:
                 langIndex = 59;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 68:
                 langIndex = 60;
                 break;
             case 69:
                 langIndex = 58;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 70:
                 langIndex = 56;
@@ -399,15 +399,15 @@ public final class Resources {
                 break;
             case 93:
                 langIndex = 83;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 94:
                 langIndex = 81;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 95:
                 langIndex = 80;
-                langArgs = args;
+                langArgs = formatArgs;
                 break;
             case 96:
                 langIndex = 82;
@@ -488,10 +488,10 @@ public final class Resources {
         }
     }
 
-    public static Image getImage(int id) {
+    public static Image getImage(int resourceId) {
         Image image = null;
-        if (id != -1) {
-            byte[] data = getBytes(id);
+        if (resourceId != -1) {
+            byte[] data = getBytes(resourceId);
             try {
                 image = Image.createImage(data, 0, data.length);
             } catch (Exception e) {
@@ -500,21 +500,21 @@ public final class Resources {
         return image;
     }
 
-    public static synchronized String getString(int id) {
+    public static synchronized String getString(int resourceId) {
         String str;
         synchronized (Resources.class) {
-            str = getString(id, null);
+            str = getString(resourceId, null);
         }
         return str;
     }
 
     /** Size in bytes of resource 'id'. */
-    private static int sizeOf(int id) {
-        if (id == -1) {
+    private static int sizeOf(int resourceId) {
+        if (resourceId == -1) {
             return 0;
         }
-        int index = id & 32767;
-        if ((Integer.MIN_VALUE & id) != 0) {
+        int index = resourceId & 32767;
+        if ((Integer.MIN_VALUE & resourceId) != 0) {
             return -offsets[index];
         }
         int next = index + 1;
@@ -522,14 +522,14 @@ public final class Resources {
             next++;
         }
         return (next >= 91 || offsets[next] <= offsets[index])
-                ? offsets[((Integer.MAX_VALUE & id) >> 16) + 91] - offsets[index]
+                ? offsets[((Integer.MAX_VALUE & resourceId) >> 16) + 91] - offsets[index]
                 : offsets[next] - offsets[index];
     }
 
     /** Opens file "l<n>" (header: 7 bytes, UTF string, then 153 ints). */
-    private static void loadLangFile(int n) {
+    private static void loadLangFile(int langIndex) {
         try {
-            InputStream is = instance.getClass().getResourceAsStream(new StringBuffer().append("l").append(n).toString());
+            InputStream is = instance.getClass().getResourceAsStream(new StringBuffer().append("l").append(langIndex).toString());
             if (is != null) {
                 langStream = new DataInputStream(is);
                 langStream.skipBytes(7);
