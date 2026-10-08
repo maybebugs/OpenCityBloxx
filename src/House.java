@@ -214,6 +214,26 @@ public class House extends GameMIDlet implements Screen {
     private static int[] flyerCounts;
     private static final int[] flyerSizes = new int[28];
     private static final int[][] flyerTable = new int[][]{new int[]{0, 0, 0, 2, 3, 2, 3, 3, 4, 5, 6, 6, 6, 7, 8, 8, 9, 9, 10, 10, 11, 12, 12, 13, 14, 15, 17, 18, 21}, new int[]{1, 1, 1, 3, 4, 4, 4, 5, 5, 6, 7, 7, 7, 999, 9, 10, 999, 999, 11, 999, 12, 13, 14, 999, 15, 16, 18, 19, 999}, new int[]{0, 30, 30, 20, 20, 40, 60, 60, 30, 30, 50, 50, 10, 50, 100, 20, 40, 50, 100, 30, 100, 100, 30, 10, 100, 100, 100, 100, 100}, new int[]{60, 2, 1, 3, 2, 2, -2, 3, -4, 5, 2, 2, 6, 0, 0, -2, 0, 0, 0, 0, 0, 0, 3, -3, 0, 0, 0, 0, -3}};
+    public static final int GAME_MODE_CITY_TOWER = 5;
+    public static final int GAME_MODE_QUICK = 6;
+
+    public static final int SCREEN_STATE_QUICK_TOWER = 1;
+    public static final int SCREEN_STATE_CITY_VIEW = 2;
+    public static final int SCREEN_STATE_CITY_TOWER = 3;
+    public static final int SCREEN_STATE_PAUSE = 4;
+    public static final int SCREEN_STATE_ROUND_OVER = 5;
+    public static final int SCREEN_STATE_GAME_OVER = 6;
+    public static final int SCREEN_STATE_LOADING = 7;
+    public static final int SCREEN_STATE_TUTORIAL = 8;
+
+    public static final int AUDIO_TITLE_THEME = -2147483568;
+    public static final int AUDIO_TOWER_THEME = -2147483567;
+    public static final int AUDIO_CITY_THEME = -2147483566;
+    public static final int SFX_MISS_DROP = -2147483565;
+    public static final int SFX_GOOD_DROP = -2147483564;
+    public static final int SFX_PERFECT_DROP = -2147483563;
+    public static final int RES_3D_MODELS_PACKAGE = -2147483558;
+
     public static int gameMode;
     public static int screenState;
     static boolean roundFinishedQuick = false;
@@ -281,14 +301,14 @@ public class House extends GameMIDlet implements Screen {
         this.softKeyArrowImage = Resources.getImage(10);
         vibrator = this.vibra;
         soundPlayer = this.sound;
-        this.sound.preload(-2147483568, false);
-        this.sound.preload(-2147483567, false);
-        this.sound.preload(-2147483566, false);
-        this.sound.preload(-2147483565, false);
-        this.sound.preload(-2147483564, false);
-        this.sound.preload(-2147483563, false);
+        this.sound.preload(AUDIO_TITLE_THEME, false);
+        this.sound.preload(AUDIO_TOWER_THEME, false);
+        this.sound.preload(AUDIO_CITY_THEME, false);
+        this.sound.preload(SFX_MISS_DROP, false);
+        this.sound.preload(SFX_GOOD_DROP, false);
+        this.sound.preload(SFX_PERFECT_DROP, false);
         Renderer3D.init(0, screenWidth, screenHeight);
-        Renderer3D.preloadModels(new int[]{7, 8, 9, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33, 40, 41, 42, 43}, -2147483558);
+        Renderer3D.preloadModels(new int[]{7, 8, 9, 10, 11, 12, 13, 20, 21, 22, 23, 30, 31, 32, 33, 40, 41, 42, 43}, RES_3D_MODELS_PACKAGE);
         weatherAreaWidth = screenWidth * 1024;
         weatherAreaHeight = screenHeight * 1024;
     }
@@ -1006,26 +1026,26 @@ public class House extends GameMIDlet implements Screen {
     }
 
     private void buildResultText(boolean isVictory) {
-        String stringBuffer = new StringBuffer().append(Resources.getString(93, new String[]{new StringBuffer().append("").append(score).toString()})).append('\n').toString();
+        String resultText = Resources.getString(93, new String[]{String.valueOf(score)}) + "\n";
         String bonusText = Resources.getString(96);
         if (isVictory && score > progress[3]) {
             newRecord = true;
-            stringBuffer = new StringBuffer().append(stringBuffer).append(bonusText).append('\n').toString();
+            resultText = resultText + bonusText + "\n";
             progress[3] = score;
         }
-        stringBuffer = new StringBuffer().append(stringBuffer).append(Resources.getString(94, new String[]{new StringBuffer().append("").append(blockCount).toString()})).append('\n').toString();
+        resultText = resultText + Resources.getString(94, new String[]{String.valueOf(blockCount)}) + "\n";
         if (isVictory && blockCount > progress[4]) {
             newRecord = true;
-            stringBuffer = new StringBuffer().append(stringBuffer).append(bonusText).append('\n').toString();
+            resultText = resultText + bonusText + "\n";
             progress[4] = blockCount;
         }
-        stringBuffer = new StringBuffer().append(stringBuffer).append(Resources.getString(95, new String[]{new StringBuffer().append("").append(maxCombo).toString()})).toString();
+        resultText = resultText + Resources.getString(95, new String[]{String.valueOf(maxCombo)});
         if (isVictory && maxCombo > progress[5]) {
-            stringBuffer = new StringBuffer().append(stringBuffer).append('\n').append(bonusText).toString();
+            resultText = resultText + "\n" + bonusText;
             progress[5] = maxCombo;
         }
         saveSettings();
-        House.showPrompt(stringBuffer, null, null);
+        House.showPrompt(resultText, null, null);
         screenState = 6;
         phase = PHASE_RESULT;
         if (gameMode == GAME_MODE_CITY_TOWER) {
@@ -1067,7 +1087,7 @@ public class House extends GameMIDlet implements Screen {
                 int lastSpace = -1;
                 while (width < maxWidth && pos < newline) {
                     char c = text.charAt(pos);
-                    width += font.stringWidth(new StringBuffer().append("").append(c).toString());
+                    width += font.stringWidth(String.valueOf(c));
                     pos++;
                     if (c == ' ') {
                         lastSpace = pos;
@@ -1545,7 +1565,7 @@ public class House extends GameMIDlet implements Screen {
             Storage.close();
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(new StringBuffer().append("Exception in saveTowerQuickMode(), e:").append(e.getMessage()).toString());
+            System.out.println("Exception in saveTowerQuickMode(), e:" + e.getMessage());
         }
     }
 
@@ -1791,7 +1811,7 @@ public class House extends GameMIDlet implements Screen {
             Storage.close();
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(new StringBuffer().append("Exception in saveTowerCityMode(), e:").append(e.getMessage()).toString());
+            System.out.println("Exception in saveTowerCityMode(), e:" + e.getMessage());
         }
     }
 
@@ -1887,38 +1907,44 @@ public class House extends GameMIDlet implements Screen {
     }
 
     private static void paintHud(Graphics g) {
-        int i;
-        int i2;
-        int i3;
-        int i4;
-        int i5;
+        paintLives(g);
+        paintScore(g);
+        paintTowerProgress(g);
+        paintComboGauge(g);
+    }
+
+    private static void paintLives(Graphics g) {
         House.setClipRect(g, ((hudX + (hudX >> 1)) + 14) + 4, (screenHeight - hudHeight) - 72, 11, 72);
-        i4 = 0;
-        while (i4 <= 3) {
-            i5 = (towerType - 1) * 2;
-            if (i4 > lives) {
-                i5 = (gameTime - lastLossTime >= 100 || i4 > lives + lastLossAmount) ? 8 : ((towerType - 1) * 2) + 1;
+        for (int i = 0; i <= 3; i++) {
+            int iconIndex = (towerType - 1) * 2;
+            if (i > lives) {
+                iconIndex = (gameTime - lastLossTime >= 100 || i > lives + lastLossAmount) ? 8 : ((towerType - 1) * 2) + 1;
             } else if (lives == 1 && (gameTime / 500) % 2 == 0) {
-                i5 = 9;
+                iconIndex = 9;
             }
-            g.drawImage(lifeIcons, (((hudX + (hudX >> 1)) + 14) - (i5 * 11)) + 4, (screenHeight - hudHeight) - (i4 * 12), 20);
-            i4++;
+            g.drawImage(lifeIcons, (((hudX + (hudX >> 1)) + 14) - (iconIndex * 11)) + 4, (screenHeight - hudHeight) - (i * 12), 20);
         }
+    }
+
+    private static void paintScore(Graphics g) {
         if (blockCount > 0) {
             House.drawDigitsA(g, score, screenWidth - hudX, ((screenHeight - hudHeight) - 2) - 12, 5, false);
             House.setClipRect(g, (((screenWidth - hudX) - 28) - 3) - 11, ((screenHeight - hudHeight) - 2) - 19, 11, 19);
             g.drawImage(hudIcons, (((screenWidth - hudX) - 28) - 3) - 11, ((screenHeight - hudHeight) - 2) - 19, 20);
         }
+    }
+
+    private static void paintTowerProgress(Graphics g) {
         if (gameMode == GAME_MODE_CITY_TOWER) {
             House.setClipRect(g, hudX - 3, ((screenHeight - hudHeight) - 21) - (blockGoal * 3), 20, 21);
-            i5 = towerType - 1;
+            int medalIndex = towerType - 1;
             if (phase == PHASE_ROOF && (gameTime / 500) % 2 == 0) {
-                i5 = 4;
+                medalIndex = 4;
             }
-            g.drawImage(levelMedals, (hudX - 3) - (i5 * 20), ((screenHeight - hudHeight) - 21) - (blockGoal * 3), 20);
-            for (i5 = 0; i5 < Math.min(blockCount, blockGoal - 1); i5++) {
-                House.setClipRect(g, hudX, ((screenHeight - hudHeight) - 2) - ((i5 + 1) * 3), 14, 3);
-                g.drawImage(hudIcons, hudX + 2, ((((screenHeight - hudHeight) - 2) - 20) - ((i5 + 1) * 3)) - ((towerType - 1) * 3), 20);
+            g.drawImage(levelMedals, (hudX - 3) - (medalIndex * 20), ((screenHeight - hudHeight) - 21) - (blockGoal * 3), 20);
+            for (int f = 0; f < Math.min(blockCount, blockGoal - 1); f++) {
+                House.setClipRect(g, hudX, ((screenHeight - hudHeight) - 2) - ((f + 1) * 3), 14, 3);
+                g.drawImage(hudIcons, hudX + 2, ((((screenHeight - hudHeight) - 2) - 20) - ((f + 1) * 3)) - ((towerType - 1) * 3), 20);
             }
             House.setClipRect(g, hudX - 1, (screenHeight - hudHeight) - 2, 14, 2);
             g.drawImage(hudIcons, (hudX + 2) - 1, (((screenHeight - hudHeight) - 2) - 28) - 1, 20);
@@ -1941,6 +1967,9 @@ public class House extends GameMIDlet implements Screen {
             House.drawDigitsB(g, blockCount, (hudX - 9) + 23, ((screenHeight - hudHeight) - 50) + 37, 3, false);
         }
         House.setClipRect(g, 0, 0, screenWidth, screenHeight);
+    }
+
+    private static void paintComboGauge(Graphics g) {
         if (comboTimer > 0) {
             g.setColor(107, 26, 0);
             g.drawRect((((screenWidth >> 1) - (screenWidth >> 2)) - 2) - 1, hudHeight - 1, ((screenWidth >> 1) + 4) + 1, 9);
@@ -1953,26 +1982,25 @@ public class House extends GameMIDlet implements Screen {
             House.setClipRect(g, ((screenWidth >> 1) - (screenWidth >> 2)) - 11, hudHeight - 7, 22, 22);
             g.drawImage(comboStarSprite, (((screenWidth >> 1) - (screenWidth >> 2)) - 11) - (((gameTime / 80) % 4) * 22), hudHeight - 7, 20);
             if (blockState[0] == BLOCK_HANGING || blockState[0] == BLOCK_DROPPED) {
-                i5 = centerX + (((blockX[0] - camX) * 32) >> 8);
-                i4 = centerY - (((blockY[0] - camY) * 32) >> 8);
-                House.setClipRect(g, i5 - 22, i4 - 22, 44, 44);
-                g.drawImage(comboSparkleSprite, (i5 - 22) - (((gameTime / 100) % 3) * 44), i4 - 22, 20);
+                int sprX = centerX + (((blockX[0] - camX) * 32) >> 8);
+                int sprY = centerY - (((blockY[0] - camY) * 32) >> 8);
+                House.setClipRect(g, sprX - 22, sprY - 22, 44, 44);
+                g.drawImage(comboSparkleSprite, (sprX - 22) - (((gameTime / 100) % 3) * 44), sprY - 22, 20);
             }
             if (comboCount > 0) {
-                for (i5 = topFloorSlot; i5 > Math.max(0, topFloorSlot - comboCount); i5--) {
-                    i4 = centerX + (((floorX[i5] - camX) * 32) >> 8);
-                    i = centerY - (((floorY[i5] - camY) * 32) >> 8);
-                    House.setClipRect(g, i4 - 22, i - 22, 44, 44);
-                    g.drawImage(comboSparkleSprite, (i4 - 22) - ((((gameTime / 100) + i5) % 3) * 44), i - 22, 20);
+                for (int slot = topFloorSlot; slot > Math.max(0, topFloorSlot - comboCount); slot--) {
+                    int sprX = centerX + (((floorX[slot] - camX) * 32) >> 8);
+                    int sprY = centerY - (((floorY[slot] - camY) * 32) >> 8);
+                    House.setClipRect(g, sprX - 22, sprY - 22, 44, 44);
+                    g.drawImage(comboSparkleSprite, (sprX - 22) - ((((gameTime / 100) + slot) % 3) * 44), sprY - 22, 20);
                 }
                 if (comboCount > 1) {
                     House.setClipRect(g, ((screenWidth >> 1) + (screenWidth >> 2)) + 5, hudHeight, 7, 12);
                     g.drawImage(digitSheetA, (((screenWidth >> 1) + (screenWidth >> 2)) + 5) - 91, hudHeight - 2, 20);
-                    i5 = comboCount > 9 ? 2 : 1;
-                    House.drawDigitsA(g, comboCount, ((((screenWidth >> 1) + (screenWidth >> 2)) + 10) + 2) + (i5 * 7), hudHeight - 2, i5, false);
+                    int digits = comboCount > 9 ? 2 : 1;
+                    House.drawDigitsA(g, comboCount, ((((screenWidth >> 1) + (screenWidth >> 2)) + 10) + 2) + (digits * 7), hudHeight - 2, digits, false);
                 }
             }
-            return;
         } else if (comboBonus != 0 && comboTimer > -2000 && ((-comboTimer) / 100) % 2 == 0) {
             House.drawDigitsA(g, comboBonus, (screenWidth >> 1) + 14, hudHeight, 3, true);
         }
@@ -2151,10 +2179,7 @@ public class House extends GameMIDlet implements Screen {
     private static final int PHASE_RESULT = 3;      // result screen shown
     private static final int PHASE_INTRO = 4;       // first-time tutorial, before the first drop (inferred)
 
-    // House.gameMode: 5 = city-tower mode (finished towers are placed in the city; has a goal height and a roof),
-    // 6 = quick mode (endless tower). Confirmed by the save/load pairing (5 -> saveTowerCityMode, 6 -> saveTowerQuickMode).
-    private static final int GAME_MODE_CITY_TOWER = 5;
-    private static final int GAME_MODE_QUICK = 6;
+
 
     // Sentinels stored in blockAngle/blockTilt.
     private static final int ANGLE_NONE = 999;      // no rotation animation
@@ -2413,42 +2438,17 @@ public class House extends GameMIDlet implements Screen {
                 }
                 break;
             case 2:
-                int i3;
-                int i4;
-                int i5;
-                int i6;
-                int[] iArr;
-                int i7;
-                int min;
-                if (weatherTimer < phaseDuration / 2) {
-                    weatherEmitters[0][1] = weatherEmitters[0][0] * House.interpolate(0, phaseDuration / 2, 512, 1024, Math.min(weatherTimer, phaseDuration / 2) + 512);
-                    int[] iArr2 = weatherEmitters[1];
-                    i3 = weatherEmitters[1][0];
-                    i4 = phaseDuration / 2;
-                    i5 = 0;
-                    i6 = i3;
-                    iArr = iArr2;
-                    i3 = 512;
-                    i7 = i4;
-                    i4 = 1024;
-                    min = Math.min(weatherTimer, phaseDuration / 2);
-                    i2 = 512;
+                int halfPhase = phaseDuration / 2;
+                if (weatherTimer < halfPhase) {
+                    int interp = House.interpolate(0, halfPhase, 512, 1024, Math.min(weatherTimer, halfPhase) + 512);
+                    weatherEmitters[0][1] = weatherEmitters[0][0] * interp;
+                    weatherEmitters[1][1] = weatherEmitters[1][0] * interp;
                 } else {
-                    weatherEmitters[0][1] = weatherEmitters[0][0] * House.interpolate(phaseDuration / 2, phaseDuration, 1024, 512, Math.min(weatherTimer - (phaseDuration / 2), phaseDuration / 2) + 1024);
-                    int[] iArr3 = weatherEmitters[1];
-                    i7 = weatherEmitters[1][0];
-                    i3 = phaseDuration / 2;
-                    i4 = phaseDuration;
-                    i6 = i7;
-                    iArr = iArr3;
-                    i7 = i4;
-                    i5 = i3;
-                    i4 = 512;
-                    i3 = 1024;
-                    min = Math.min(weatherTimer - (phaseDuration / 2), phaseDuration / 2);
-                    i2 = 1024;
+                    int timerOffset = Math.min(weatherTimer - halfPhase, halfPhase);
+                    int interp = House.interpolate(halfPhase, phaseDuration, 1024, 512, timerOffset + 1024);
+                    weatherEmitters[0][1] = weatherEmitters[0][0] * interp;
+                    weatherEmitters[1][1] = weatherEmitters[1][0] * interp;
                 }
-                iArr[1] = House.interpolate(i5, i7, i3, i4, i2 + min) * i6;
                 if (weatherType == 1) {
                     flashTimer = Math.min(flashTimer + dt, flashDuration);
                     if (House.random(100) == 7) {
@@ -2542,31 +2542,31 @@ public class House extends GameMIDlet implements Screen {
             return false;
         }
         if (floorMesh == null) {
-            floorMesh = Renderer3D.getModel(towerType + 9, -2147483558, true);
+            floorMesh = Renderer3D.getModel(towerType + 9, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(12)) {
                 return false;
             }
-            fallingMesh = Renderer3D.getModel(towerType + 19, -2147483558, true);
+            fallingMesh = Renderer3D.getModel(towerType + 19, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(13)) {
                 return false;
             }
-            topMesh = Renderer3D.getModel(towerType + 29, -2147483558, true);
+            topMesh = Renderer3D.getModel(towerType + 29, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(14)) {
                 return false;
             }
-            topMeshBonus = Renderer3D.getModel(towerType + 39, -2147483558, true);
+            topMeshBonus = Renderer3D.getModel(towerType + 39, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(16)) {
                 return false;
             }
-            groundMesh = Renderer3D.getModel(9, -2147483558, true);
+            groundMesh = Renderer3D.getModel(9, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(18)) {
                 return false;
             }
-            craneHookMesh = Renderer3D.getModel(8, -2147483558, true);
+            craneHookMesh = Renderer3D.getModel(8, RES_3D_MODELS_PACKAGE, true);
             if (!House.updateLoadingProgress(19)) {
                 return false;
             }
-            craneHookStaticMesh = Renderer3D.getModel(7, -2147483558, true);
+            craneHookStaticMesh = Renderer3D.getModel(7, RES_3D_MODELS_PACKAGE, true);
         }
         if (!House.updateLoadingProgress(20)) {
             return false;
@@ -2818,8 +2818,6 @@ public class House extends GameMIDlet implements Screen {
         flyers[flyerType][0] = i2;
     }
 
-    /* JADX WARNING: inconsistent code. */
-    /* Code decompiled incorrectly, please refer to instructions dump. */
     /**
      * Eases the camera height aW towards its target aX and applies the landing shake
      * Updates camera position and target interpolation.
@@ -3015,7 +3013,7 @@ public class House extends GameMIDlet implements Screen {
                     House.updateLoadingProgress(15);
                     if (CityMode.loadAssets()) {
                         resetTiming();
-                        this.sound.play(-2147483566, -1);
+                        this.sound.play(AUDIO_CITY_THEME, -1);
                         screenState = nextScreenState;
                         roundFinishedCity = false;
                         roundFinishedQuick = false;
@@ -3029,15 +3027,15 @@ public class House extends GameMIDlet implements Screen {
                     skyStage = -1;
                     resetTiming();
                     if (!(roundFinishedCity && roundFinishedQuick)) {
-                        this.sound.play(-2147483567, -1);
+                        this.sound.play(AUDIO_TOWER_THEME, -1);
                     }
                     if (gameMode == GAME_MODE_QUICK) {
                         if (roundFinishedQuick) {
                             if (!newRecord) {
-                                soundPlayer.play(-2147483564, 1);
+                                soundPlayer.play(SFX_GOOD_DROP, 1);
                             }
                             if (newRecord) {
-                                soundPlayer.play(-2147483563, 1);
+                                soundPlayer.play(SFX_PERFECT_DROP, 1);
                             }
                         }
                         if (progress[1] == 0) {
@@ -3106,15 +3104,15 @@ public class House extends GameMIDlet implements Screen {
                     roundFinishedCity = true;
                     soundPlayer.stopAll();
                     if (landingQuality == 0) {
-                        soundPlayer.play(-2147483565, 1);
+                        soundPlayer.play(SFX_MISS_DROP, 1);
                         House.showPrompt(Resources.getString(56), null, null);
                         screenState = 5;
                     } else if (landingQuality == 2) {
-                        soundPlayer.play(-2147483563, 1);
+                        soundPlayer.play(SFX_PERFECT_DROP, 1);
                         House.showPrompt(Resources.getString(57), null, null);
                         screenState = 5;
                     } else {
-                        soundPlayer.play(-2147483564, 1);
+                        soundPlayer.play(SFX_GOOD_DROP, 1);
                         buildResultText(false);
                     }
                 } else {
@@ -3122,10 +3120,10 @@ public class House extends GameMIDlet implements Screen {
                     soundPlayer.stopAll();
                     buildResultText(true);
                     if (!newRecord) {
-                        soundPlayer.play(-2147483564, 1);
+                        soundPlayer.play(SFX_GOOD_DROP, 1);
                     }
                     if (newRecord) {
-                        soundPlayer.play(-2147483563, 1);
+                        soundPlayer.play(SFX_PERFECT_DROP, 1);
                     }
                 }
                 phase = PHASE_RESULT;
@@ -3439,7 +3437,7 @@ public class House extends GameMIDlet implements Screen {
             z = true;
         }
         if (this.soundEnabled && !this.titleBgmStarted) {
-            this.sound.play(-2147483568, -1);
+            this.sound.play(AUDIO_TITLE_THEME, -1);
             this.titleBgmStarted = true;
         }
         this.loadingNeedsRepaint = true;
@@ -3490,7 +3488,7 @@ public class House extends GameMIDlet implements Screen {
     }
 
     public final String formatNumber(int number) {
-        return new StringBuffer().append("").append(number).toString();
+        return String.valueOf(number);
     }
 
     protected final void loadTowerQuickMode() {
@@ -3691,7 +3689,7 @@ public class House extends GameMIDlet implements Screen {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println(new StringBuffer().append("Exception in loadTowerQuickMode(), e:").append(e.getMessage()).toString());
+            System.out.println("Exception in loadTowerQuickMode(), e:" + e.getMessage());
         }
     }
 
@@ -4038,7 +4036,7 @@ public class House extends GameMIDlet implements Screen {
         house.soundEnabled = z;
         this.sound.setEnabled(this.soundEnabled);
         if (!z3 && this.soundEnabled) {
-            this.sound.play(-2147483568, -1);
+            this.sound.play(AUDIO_TITLE_THEME, -1);
         }
         if (this.vibra != null) {
             if (Storage.getSetting(0) != 1) {

@@ -274,7 +274,7 @@ public final class MenuController implements Screen {
                             entries[entryCount][0] = MenuController.readValue(2); // setting index
                             int selected = optionIndex + Storage.getSetting(entries[entryCount][0]);
                             for (int o2 = 0; o2 < optionCount; o2++) {
-                                optionTexts[optionIndex] = new StringBuffer().append(text).append(" [").append(Resources.getString(MenuController.readValue(3))).append("]").toString();
+                                optionTexts[optionIndex] = text + " [" + Resources.getString(MenuController.readValue(3)) + "]";
                                 optionIndex++;
                             }
                             text = optionTexts[selected];

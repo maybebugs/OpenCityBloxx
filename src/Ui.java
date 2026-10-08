@@ -249,8 +249,6 @@ public final class Ui {
         return Ui.wrapPages(text, -1, maxWidth, font)[0];
     }
 
-    /* JADX WARNING: inconsistent code. */
-    /* Code decompiled incorrectly, please refer to instructions dump. */
     /**
      * Word-wraps text into pages of lines.
      * Reconstructed from bytecode (decompiler failure).
@@ -650,8 +648,6 @@ public final class Ui {
         }
     }
 
-    /* JADX WARNING: inconsistent code. */
-    /* Code decompiled incorrectly, please refer to instructions dump. */
     /** Paints the menu title (icon + title text, scrolling ticker when several titles). Reconstructed from bytecode. */
     private static void paintHeader(Graphics g) {
         g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);

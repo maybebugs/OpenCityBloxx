@@ -76,210 +76,156 @@ public final class HighScores implements ModalScreen {
     }
 
     private void paintScoreTable(Graphics g) {
-        int i;
-        String stringBuffer;
-        Graphics graphics2;
-        int i2;
-        int i3;
-        int i4;
         g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
         g.setFont(bodyFont);
-        StringBuffer stringBuffer2 = new StringBuffer();
         g.setColor(0);
-        if (Storage.getSetting(4) == 1) {
-            g.setFont(boldFont);
-            g.drawString(new StringBuffer().append(Resources.getString(92)).append(":").toString(), rightEdge - 8, 42, 24);
-            g.setFont(bodyFont);
-            i = lineHeight + 42;
-            g.drawString(new StringBuffer().append(" ").append(Resources.getString(154)).toString(), rightEdge - 8, i, 24);
-            i += lineHeight;
-            g.drawImage(gradientHeader, 0, i - 3, 20);
-            g.setClip((rightEdge - 8) - headerScoreIcon.getWidth(), i + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-            g.drawImage(headerScoreIcon, (rightEdge - 8) - headerScoreIcon.getWidth(), i + 2, 20);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(this.midlet.formatNumber(this.scores[0][0][0]), (((rightEdge - 8) - headerScoreIcon.getWidth()) - 8) - bodyFont.stringWidth("000000"), i, 20);
-            i += (lineHeight * 3) / 2;
-            g.setFont(boldFont);
-            stringBuffer = new StringBuffer().append(Resources.getString(91)).append(":").toString();
-            graphics2 = g;
-            i2 = i;
-            i3 = rightEdge - 8;
-            i4 = i;
-            i = 24;
-        } else {
-            g.setFont(boldFont);
-            g.drawString(new StringBuffer().append(Resources.getString(92)).append(":").toString(), nameX + 8, 42, 20);
-            g.setFont(bodyFont);
-            i = lineHeight + 42;
-            g.drawString(new StringBuffer().append(Resources.getString(154)).append(" ").toString(), nameX + 8, i, 20);
-            i += lineHeight;
-            g.drawImage(gradientHeader, 0, i - 3, 20);
-            g.setClip(nameX + 8, i + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-            g.drawImage(headerScoreIcon, nameX + 8, i + 2, 20);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(this.midlet.formatNumber(this.scores[0][0][0]), (((nameX + 8) + headerScoreIcon.getWidth()) + 8) + bodyFont.stringWidth("000000"), i, 24);
-            i += (lineHeight * 3) / 2;
-            g.setFont(boldFont);
-            stringBuffer = new StringBuffer().append(Resources.getString(91)).append(":").toString();
-            graphics2 = g;
-            i2 = i;
-            i3 = nameX + 8;
-            i4 = i;
-            i = 20;
-        }
-        graphics2.drawString(stringBuffer, i3, i4, i);
+
+        boolean isRtl = (Storage.getSetting(4) == 1);
+        int topSectionX = isRtl ? (rightEdge - 8) : (nameX + 8);
+        int topAnchor = isRtl ? 24 : 20;
+
+        g.setFont(boldFont);
+        g.drawString(Resources.getString(92) + ":", topSectionX, 42, topAnchor);
+
         g.setFont(bodyFont);
-        i3 = i2 + lineHeight;
-        for (int i5 = 0; i5 < 3; i5++) {
-            String stringBuffer3;
-            int i6;
-            String str;
-            Graphics graphics3;
-            g.drawImage(gradientRow, 0, i3 - 3, 20);
-            if (Storage.getSetting(4) == 1) {
-                stringBuffer3 = new StringBuffer().append(i5 + 1).append(". ").toString();
-                i6 = rightEdge;
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 20;
-            } else {
-                stringBuffer3 = new StringBuffer().append(i5 + 1).append(". ").toString();
-                i6 = nameX;
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 24;
-            }
-            graphics3.drawString(str, i6, i4, i);
-            if (Storage.getSetting(4) == 1) {
-                g.setClip(scoreRight - rowScoreIcon.getWidth(), i3 + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
-                g.drawImage(rowScoreIcon, scoreRight - rowScoreIcon.getWidth(), i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = (scoreRight - rowScoreIcon.getWidth()) - 8;
-                str = this.names[1][i5];
-                graphics3 = g;
-                i4 = i3;
-                i = 24;
-            } else {
-                g.setClip(scoreLeft, i3 + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
-                g.drawImage(rowScoreIcon, scoreLeft, i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = (scoreLeft + rowScoreIcon.getWidth()) + 8;
-                str = this.names[1][i5];
-                graphics3 = g;
-                i4 = i3;
-                i = 20;
-            }
-            graphics3.drawString(str, i6, i4, i);
-            i3 += lineHeight;
-            if (Storage.getSetting(4) == 1) {
-                stringBuffer3 = this.midlet.formatNumber(this.scores[1][i5][0]);
-                g.setClip(scoreRight - headerScoreIcon.getWidth(), i3 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-                g.drawImage(headerScoreIcon, scoreRight - headerScoreIcon.getWidth(), i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = ((scoreRight - headerScoreIcon.getWidth()) - 8) - bodyFont.stringWidth("000000");
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 20;
-            } else {
-                stringBuffer3 = this.midlet.formatNumber(this.scores[1][i5][0]);
-                g.setClip(scoreLeft, i3 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-                g.drawImage(headerScoreIcon, scoreLeft, i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = ((scoreLeft + headerScoreIcon.getWidth()) + 8) + bodyFont.stringWidth("000000");
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 24;
-            }
-            graphics3.drawString(str, i6, i4, i);
-            if (Storage.getSetting(4) == 1) {
-                stringBuffer3 = this.midlet.formatNumber(this.scores[1][i5][1]);
-                g.setClip(((((scoreRight - headerScoreIcon.getWidth()) - 8) - bodyFont.stringWidth("000000")) - 64) - unusedIcon.getWidth(), i3 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
-                g.drawImage(unusedIcon, ((((scoreRight - headerScoreIcon.getWidth()) - 8) - bodyFont.stringWidth("000000")) - 64) - unusedIcon.getWidth(), i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = ((((((scoreRight - headerScoreIcon.getWidth()) - 8) - bodyFont.stringWidth("000000")) - 64) - unusedIcon.getWidth()) - 8) - bodyFont.stringWidth("000");
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 20;
-            } else {
-                stringBuffer3 = this.midlet.formatNumber(this.scores[1][i5][1]);
-                g.setClip((((scoreLeft + headerScoreIcon.getWidth()) + 8) + bodyFont.stringWidth("000000")) + 64, i3 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
-                g.drawImage(unusedIcon, (((scoreLeft + headerScoreIcon.getWidth()) + 8) + bodyFont.stringWidth("000000")) + 64, i3 + 2, 20);
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-                i6 = ((((((scoreLeft + headerScoreIcon.getWidth()) + 8) + bodyFont.stringWidth("000000")) + 64) + unusedIcon.getWidth()) + 8) + bodyFont.stringWidth("000");
-                str = stringBuffer3;
-                graphics3 = g;
-                i4 = i3;
-                i = 24;
-            }
-            graphics3.drawString(str, i6, i4, i);
-            i3 += lineHeight;
+        int curY = lineHeight + 42;
+        String modeLabel = isRtl ? (" " + Resources.getString(154)) : (Resources.getString(154) + " ");
+        g.drawString(modeLabel, topSectionX, curY, topAnchor);
+        curY += lineHeight;
+
+        g.drawImage(gradientHeader, 0, curY - 3, 20);
+
+        int iconX = isRtl ? (topSectionX - headerScoreIcon.getWidth()) : topSectionX;
+        g.setClip(iconX, curY + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
+        g.drawImage(headerScoreIcon, iconX, curY + 2, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+
+        String scoreStr = this.midlet.formatNumber(this.scores[0][0][0]);
+        if (isRtl) {
+            g.drawString(scoreStr, (iconX - 8) - bodyFont.stringWidth("000000"), curY, 20);
+        } else {
+            g.drawString(scoreStr, (iconX + headerScoreIcon.getWidth() + 8) + bodyFont.stringWidth("000000"), curY, 24);
         }
-        i = lineHeight + i3;
-        if ((lineHeight * 3) + i <= GameMIDlet.screenHeight - 8) {
+
+        curY += (lineHeight * 3) / 2;
+        g.setFont(boldFont);
+        g.drawString(Resources.getString(91) + ":", topSectionX, curY, topAnchor);
+
+        g.setFont(bodyFont);
+        int rowY = curY + lineHeight;
+        for (int row = 0; row < 3; row++) {
+            g.drawImage(gradientRow, 0, rowY - 3, 20);
+            String rankStr = (row + 1) + ". ";
+            if (isRtl) {
+                g.drawString(rankStr, rightEdge, rowY, 20);
+            } else {
+                g.drawString(rankStr, nameX, rowY, 24);
+            }
+
+            String playerName = this.names[1][row];
+            if (isRtl) {
+                int nameIconX = scoreRight - rowScoreIcon.getWidth();
+                g.setClip(nameIconX, rowY + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
+                g.drawImage(rowScoreIcon, nameIconX, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                g.drawString(playerName, nameIconX - 8, rowY, 24);
+            } else {
+                g.setClip(scoreLeft, rowY + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
+                g.drawImage(rowScoreIcon, scoreLeft, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                g.drawString(playerName, scoreLeft + rowScoreIcon.getWidth() + 8, rowY, 20);
+            }
+
+            rowY += lineHeight;
+            String rowScoreStr = this.midlet.formatNumber(this.scores[1][row][0]);
+            if (isRtl) {
+                int hIconX = scoreRight - headerScoreIcon.getWidth();
+                g.setClip(hIconX, rowY + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
+                g.drawImage(headerScoreIcon, hIconX, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                int scoreTextX = (hIconX - 8) - bodyFont.stringWidth("000000");
+                g.drawString(rowScoreStr, scoreTextX, rowY, 20);
+
+                String floorsStr = this.midlet.formatNumber(this.scores[1][row][1]);
+                int uIconX = (scoreTextX - 64) - unusedIcon.getWidth();
+                g.setClip(uIconX, rowY + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
+                g.drawImage(unusedIcon, uIconX, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                g.drawString(floorsStr, (uIconX - 8) - bodyFont.stringWidth("000"), rowY, 20);
+            } else {
+                g.setClip(scoreLeft, rowY + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
+                g.drawImage(headerScoreIcon, scoreLeft, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                int scoreTextX = (scoreLeft + headerScoreIcon.getWidth() + 8) + bodyFont.stringWidth("000000");
+                g.drawString(rowScoreStr, scoreTextX, rowY, 24);
+
+                String floorsStr = this.midlet.formatNumber(this.scores[1][row][1]);
+                int uIconX = scoreTextX + 64;
+                g.setClip(uIconX, rowY + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
+                g.drawImage(unusedIcon, uIconX, rowY + 2, 20);
+                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+                g.drawString(floorsStr, (uIconX + unusedIcon.getWidth() + 8) + bodyFont.stringWidth("000"), rowY, 24);
+            }
+
+            rowY += lineHeight;
+        }
+
+        int arrowY = lineHeight + rowY;
+        if ((lineHeight * 3) + arrowY <= GameMIDlet.screenHeight - 8) {
             endVisible = true;
-            HighScores.paintArrow(g, i, false);
+            HighScores.paintArrow(g, arrowY, false);
             return;
         }
         Ui.paintDownArrow(g, (GameMIDlet.screenWidth - 18) / 2, GameMIDlet.screenHeight - 36, false);
     }
 
     private static void paintArrow(Graphics g, int y, boolean withArrow) {
-        int i2;
-        String stringBuffer;
-        int i3;
-        int i4 = 24;
         if (withArrow) {
             Ui.paintUpArrow(g, (GameMIDlet.screenWidth - 18) >> 1, y, true);
             y = (y + 18) + 8;
         }
         g.setFont(bodyFont);
+        String label155 = "- " + Resources.getString(155);
+        String label156 = "- " + Resources.getString(156);
+        String label157 = "- " + Resources.getString(157);
         if (Storage.getSetting(4) == 1) {
-            g.setClip(scoreRight - rowScoreIcon.getWidth(), y + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
-            g.drawImage(rowScoreIcon, scoreRight - rowScoreIcon.getWidth(), y + 2, 20);
+            int icon1X = scoreRight - rowScoreIcon.getWidth();
+            g.setClip(icon1X, y + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
+            g.drawImage(rowScoreIcon, icon1X, y + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(new StringBuffer().append("- ").append(Resources.getString(155)).toString(), (scoreRight - rowScoreIcon.getWidth()) - 8, y, 24);
+            g.drawString(label155, icon1X - 8, y, 24);
+
+            int y2 = y + lineHeight;
+            int icon2X = scoreRight - headerScoreIcon.getWidth();
+            g.setClip(icon2X, y2 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
+            g.drawImage(headerScoreIcon, icon2X, y2 + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            i2 = lineHeight + y;
-            g.setClip(scoreRight - headerScoreIcon.getWidth(), i2 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-            g.drawImage(headerScoreIcon, scoreRight - headerScoreIcon.getWidth(), i2 + 2, 20);
+            g.drawString(label156, icon2X - 8, y2, 24);
+
+            int y3 = y2 + lineHeight;
+            int icon3X = scoreRight - unusedIcon.getWidth();
+            g.setClip(icon3X, y3 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
+            g.drawImage(unusedIcon, icon3X, y3 + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(new StringBuffer().append("- ").append(Resources.getString(156)).toString(), (scoreRight - headerScoreIcon.getWidth()) - 8, i2, 24);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            i2 += lineHeight;
-            g.setClip(scoreRight - unusedIcon.getWidth(), i2 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
-            g.drawImage(unusedIcon, scoreRight - unusedIcon.getWidth(), i2 + 2, 20);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            stringBuffer = new StringBuffer().append("- ").append(Resources.getString(157)).toString();
-            int i5 = i2;
-            i2 = (scoreRight - unusedIcon.getWidth()) - 8;
-            i3 = i5;
+            g.drawString(label157, icon3X - 8, y3, 24);
         } else {
             g.setClip(scoreLeft, y + 2, rowScoreIcon.getWidth(), rowScoreIcon.getHeight());
             g.drawImage(rowScoreIcon, scoreLeft, y + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(new StringBuffer().append("- ").append(Resources.getString(155)).toString(), (scoreLeft + rowScoreIcon.getWidth()) + 8, y, 20);
+            g.drawString(label155, scoreLeft + rowScoreIcon.getWidth() + 8, y, 20);
+
+            int y2 = y + lineHeight;
+            g.setClip(scoreLeft, y2 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
+            g.drawImage(headerScoreIcon, scoreLeft, y2 + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            i4 = lineHeight + y;
-            g.setClip(scoreLeft, i4 + 2, headerScoreIcon.getWidth(), headerScoreIcon.getHeight());
-            g.drawImage(headerScoreIcon, scoreLeft, i4 + 2, 20);
+            g.drawString(label156, scoreLeft + headerScoreIcon.getWidth() + 8, y2, 20);
+
+            int y3 = y2 + lineHeight;
+            g.setClip(scoreLeft, y3 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
+            g.drawImage(unusedIcon, scoreLeft, y3 + 2, 20);
             g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            g.drawString(new StringBuffer().append("- ").append(Resources.getString(156)).toString(), (scoreLeft + headerScoreIcon.getWidth()) + 8, i4, 20);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            i4 += lineHeight;
-            g.setClip(scoreLeft, i4 + 2, unusedIcon.getWidth(), unusedIcon.getHeight());
-            g.drawImage(unusedIcon, scoreLeft, i4 + 2, 20);
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            stringBuffer = new StringBuffer().append("- ").append(Resources.getString(157)).toString();
-            i2 = (scoreLeft + unusedIcon.getWidth()) + 8;
-            i3 = i4;
-            i4 = 20;
+            g.drawString(label157, scoreLeft + unusedIcon.getWidth() + 8, y3, 20);
         }
-        g.drawString(stringBuffer, i2, i3, i4);
     }
 
     private void insertScore(int[] score, String name) {

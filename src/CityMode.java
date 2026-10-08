@@ -113,8 +113,8 @@ public final class CityMode {
         String[] strArr = new String[]{Resources.getString(99), Resources.getString(100), Resources.getString(101), Resources.getString(102)};
         for (int i2 = 0; i2 < 4; i2++) {
             helpLines[i2] = House.wrapText(strArr[i2], font, i);
-            helpLines[i2 + 4] = House.wrapText(Resources.getString(62, new String[]{buildingNames[i2], new StringBuffer().append("").append(House.scoreThresholds[i2]).toString()}), font, i);
-            helpLines[i2 + 8] = House.wrapText(Resources.getString(63, new String[]{new StringBuffer().append("").append(levelThresholds[buildingUnlockLevels[i2]]).toString()}), font, i);
+            helpLines[i2 + 4] = House.wrapText(Resources.getString(62, new String[]{buildingNames[i2], String.valueOf(House.scoreThresholds[i2])}), font, i);
+            helpLines[i2 + 8] = House.wrapText(Resources.getString(63, new String[]{String.valueOf(levelThresholds[buildingUnlockLevels[i2]])}), font, i);
         }
         hintPlaceable = House.wrapText(Resources.getString(65), font, i);
         hintCellTooLow = House.wrapText(Resources.getString(66), font, i);
@@ -196,7 +196,7 @@ public final class CityMode {
             randomizeBuildingStats();
         }
         if (!tutorialShown[3]) {
-            House.showPrompt(new StringBuffer().append(Resources.getString(39)).append('\n').append(Resources.getString(158)).toString(), null, null);
+            House.showPrompt(Resources.getString(39) + "\n" + Resources.getString(158), null, null);
             tutorialShown[3] = true;
             modalActive = true;
         }
@@ -211,402 +211,474 @@ public final class CityMode {
         if (populationGauge == null) {
             return;
         }
-        int i;
-        int i2;
-        int i3 = 0;
-        int i4 = GameMIDlet.screenHeight - 55;
-        for (i = 58; i <= i4; i++) {
-            g.setColor(skyGradient[0] + ((skyGradient[3] * (i - 58)) / (i4 - 58)), skyGradient[1] + ((skyGradient[4] * (i - 58)) / (i4 - 58)), skyGradient[2] + ((skyGradient[5] * (i - 58)) / (i4 - 58)));
-            g.drawLine(0, i, GameMIDlet.screenWidth, i);
-        }
-        i = 0;
-        for (i4 = 0; i4 < 18; i4++) {
-            g.setColor(bandColors[i4]);
-            if (i4 == 2) {
-                g.fillRect(3, i, 56, 40);
-            } else if (i4 == 3) {
-                g.fillRect(59, i, (GameMIDlet.screenWidth - 6) - 56, 40);
-                i += 40;
-            } else {
-                g.drawLine(3, i, GameMIDlet.screenWidth - 3, i);
-                i++;
-            }
-        }
-        i4 = GameMIDlet.screenWidth - 6;
-        if (level < levelThresholds.length - 1) {
-            i = level;
-            while (i < levelThresholds.length - 2 && population + populationPending > levelThresholds[i + 1]) {
-                i++;
-            }
-            i2 = levelThresholds[i];
-            i = (i4 * ((population + populationPending) - i2)) / (levelThresholds[i + 1] - i2);
-        } else {
-            i = i4;
-        }
-        g.setColor(-89856);
-        g.fillRect(3, 43, i, 6);
-        g.setColor(-130816);
-        g.fillRect(3, 49, i, 3);
-        g.setClip(0, 0, 3, populationGauge.getHeight());
-        g.drawImage(populationGauge, 0, 0, 20);
-        g.setClip(GameMIDlet.screenWidth - 3, 0, 3, populationGauge.getHeight());
-        g.drawImage(populationGauge, (GameMIDlet.screenWidth - 3) - 3, 0, 20);
-        i4 = 0;
-        i = -15922164;
-        if (level == 0) {
-            i4 = -42;
-            i = -4602071;
-        }
-        g.setClip(8, 12, 14, statusIcons.getHeight());
-        g.drawImage(statusIcons, i4 + 8, 12, 20);
-        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        g.setColor(-5858534);
-        g.drawLine(24, 16, 53, 16);
-        g.setColor(i);
-        g.fillRect(24, 17, 30, 10);
-        g.setColor(-1971082);
-        g.drawLine(24, 27, 53, 27);
-        if (level > 0) {
-            drawBitmapNumber(g, digitFont, new StringBuffer().append(level).append("<20").toString(), 54, 18, 7, 6, 1, 0);
-        }
-        g.setClip(76, 12, 14, statusIcons.getHeight());
-        g.drawImage(statusIcons, 62, 12, 20);
-        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        if (populationFlashTimer >= 0) {
-            drawBitmapNumber(g, digitSheetCurrent, ":", 96, 16, 7, 0, 0, 0);
-        }
-        i4 = 0;
-        while (i4 < 6) {
-            i = i4 == 5 ? 3 : 5 - i4 <= populationFlashCount ? flashColorIndex : 0;
-            g.setClip((i4 * 14) + 100, 10, 14, 25);
-            g.drawImage(hudBarSprite, ((i4 - i) * 14) + 100, 10, 20);
-            i4++;
-        }
-        Image image = digitSheetA;
-        if (populationFlashCount == 0 && populationFlashTimer >= 0 && populationFlashTimer % 400 < 200) {
-            image = digitSheetCurrent;
-        }
-        drawBitmapNumber(g, image, new StringBuffer().append("").append(population).toString(), 167, 16, 7, 14, 5, populationFlashCount);
-        int i5 = cursorCol >= 0 ? grid[(((cursorRow * 5) + cursorCol) * 3) + 0] : 0;
-        if (phase == 0 || placementResultTimer >= 0 || placementInProgress) {
-            i = -3686478;
-            i4 = -5399421;
-            i2 = -56;
-        } else {
-            i = -1907998;
-            i4 = -15922164;
-            i2 = -28;
-        }
-        int i6 = GameMIDlet.screenWidth - 60;
-        g.setClip(i6, 12, 14, statusIcons.getHeight());
-        g.drawImage(statusIcons, i2 + i6, 12, 20);
-        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        int i7 = i6 + 20;
-        g.setColor(i);
-        g.fillRect(i7, 8, 30, 12);
-        g.setColor(i4);
-        g.fillRect(i7 + 1, 9, 28, 10);
-        if (i5 == 0) {
-            i = -3686478;
-            i4 = -5399421;
-        }
-        g.setColor(i);
-        g.fillRect(i7, 21, 30, 12);
-        g.setColor(i4);
-        g.fillRect(i7 + 1, 22, 28, 10);
-        if (phase == 1 && placementResultTimer < 0 && !placementInProgress) {
-            g.setColor(buildingColors[(pieceType + 4) - 1]);
-            g.fillRect(i7 + 1, 9, 7, 10);
-            g.setColor(buildingColors[pieceType - 1]);
-            g.fillRect(i7 + 1, 9, 6, 9);
-            drawBitmapNumber(g, digitFont, new StringBuffer().append("").append(pieceValue).toString(), i7 + 26, 9, 7, 6, 1, 0);
-            if (i5 > 0) {
-                g.setColor(buildingColors[(i5 + 4) - 1]);
-                g.fillRect(i7 + 1, 22, 7, 10);
-                g.setColor(buildingColors[i5 - 1]);
-                g.fillRect(i7 + 1, 22, 6, 9);
-                drawBitmapNumber(g, digitFont, new StringBuffer().append("").append(grid[(((cursorRow * 5) + cursorCol) * 3) + 1]).toString(), i7 + 26, 22, 7, 6, 1, 0);
-            }
-        }
-        i = GameMIDlet.screenHeight - 56;
-        g.setColor(-15463412);
-        g.drawLine(3, i, GameMIDlet.screenWidth - 3, i);
-        g.setColor(-8556946);
-        g.drawLine(3, i + 1, GameMIDlet.screenWidth - 3, i + 1);
-        g.setColor(-1318431);
-        g.drawLine(3, i + 2, GameMIDlet.screenWidth - 3, i + 2);
-        g.setColor(-1);
-        g.fillRect(3, i + 3, GameMIDlet.screenWidth - 6, 51);
-        g.setColor(-1318431);
-        g.drawLine(3, (i + 56) - 2, GameMIDlet.screenWidth - 3, (i + 56) - 2);
-        g.setColor(-8556946);
-        g.drawLine(3, (i + 56) - 1, GameMIDlet.screenWidth - 3, (i + 56) - 1);
-        g.setClip(0, i, 3, populationGauge.getHeight());
-        g.drawImage(populationGauge, -6, i, 20);
-        g.setClip(GameMIDlet.screenWidth - 3, i, 3, populationGauge.getHeight());
-        g.drawImage(populationGauge, GameMIDlet.screenWidth - 12, i, 20);
-        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        i4 = i + 4;
-        g.setColor(-16777216);
-        i = hintScroll;
-        while (i < hintScroll + hintLinesVisible && i < hintLines.length) {
-            String str;
-            Graphics graphics2;
-            if (Storage.getSetting(4) == 1) {
-                g.setFont(font);
-                i2 = 24;
-                str = hintLines[i];
-                graphics2 = g;
-                i3 = GameMIDlet.screenWidth - 10;
-                i6 = i4;
-            } else {
-                g.setFont(font);
-                i2 = 20;
-                str = hintLines[i];
-                graphics2 = g;
-                i3 = 10;
-                i6 = i4;
-            }
-            graphics2.drawString(str, i3, i6, i2);
-            i4 += font.getHeight();
-            i++;
-        }
-        i = 0;
-        if (placementResultTimer >= 0) {
-            i = placementResultTimer - 750;
-            if (i > 0) {
-                i = -i;
-            }
-            i += 750;
-        }
-        int i8 = (((((GameMIDlet.screenWidth - 28) - 11) - 173) >> 1) + 28) + 11;
-        i5 = (((((GameMIDlet.screenHeight - 60) - 56) - 173) + 1) >> 1) + 60;
-        if (phase == 1) {
-            i4 = 0;
-            if (placementResultTimer >= 0) {
-                i4 = ((-((i8 - 37) + (buildIcon.getWidth() << 1))) * i) / 750;
-            }
-            g.drawImage(buildIcon, i4 + (i8 - 37), i5 + 140, 20);
-        }
-        g.setColor(-1);
-        g.fillRect(i8, i5, 173, 173);
-        g.setColor(-12566464);
-        g.fillRect(i8 + 1, i5 + 1, 171, 171);
-        i4 = selectedBuilding;
-        if (phase == 1) {
-            i4 = pieceType - 1;
-        }
-        i6 = (cellPalette[i4] >> 16) & 255;
-        i3 = (cellPalette[i4] >> 8) & 255;
-        int i9 = cellPalette[i4] & 255;
-        int i10 = (cellPalette[i4 + 4] >> 16) & 255;
-        int i11 = (cellPalette[i4 + 4] >> 8) & 255;
-        i7 = cellPalette[i4 + 4] & 255;
-        i2 = blinkTimer800 - 400;
-        if (i2 > 0) {
-            i2 = -i2;
-        }
-        i2 += 400;
-        i6 = (((i6 + (((i10 - i6) * i2) / 400)) << 16) | ((i3 + (((i11 - i3) * i2) / 400)) << 8)) | (((i2 * (i7 - i9)) / 400) + i9);
-        for (i10 = 0; i10 < 5; i10++) {
-            for (i9 = 0; i9 < 5; i9++) {
-                i3 = tierColorsSecondary[unlockedBuildingTier];
-                i2 = tierColorsPrimary[unlockedBuildingTier];
-                if (cellLevels[(i10 * 5) + i9] >= i4 && !placementInProgress && placementResultTimer < 0 && selectedBuilding <= unlockedBuildingTier && (placeDelay < 0 || phase != 1)) {
-                    i2 = i6;
-                    i3 = i6;
-                }
-                g.setColor(tierColorsPrimary[unlockedBuildingTier]);
-                g.fillRect((i8 + 5) + (i9 * 34), (i5 + 5) + (i10 * 34), 27, 27);
-                g.setColor(i3);
-                g.fillRect(((i8 + 5) + 1) + (i9 * 34), ((i5 + 5) + 1) + (i10 * 34), 25, 25);
-                g.setColor(i2);
-                g.fillRect(((i8 + 5) + 2) + (i9 * 34), ((i5 + 5) + 2) + (i10 * 34), 23, 23);
-                g.setColor(tierColorsSecondary[unlockedBuildingTier]);
-                g.fillRect(((i8 + 5) + 3) + (i9 * 34), ((i5 + 5) + 3) + (i10 * 34), 21, 21);
-            }
-        }
-        g.setStrokeStyle(1);
-        g.setColor(-7171438);
-        for (i4 = 0; i4 < 4; i4++) {
-            i2 = (((i8 + 5) + 27) + 3) + (i4 * 34);
-            g.drawLine(i2, (i5 + 5) + 1, i2, ((i5 + 173) - 5) - 2);
-        }
-        for (i4 = 0; i4 < 4; i4++) {
-            i2 = (((i5 + 5) + 27) + 3) + (i4 * 34);
-            g.drawLine((i8 + 5) + 1, i2, ((i8 + 173) - 5) - 2, i2);
-        }
-        g.setStrokeStyle(0);
-        g.setColor(-13108);
-        i6 = (animTick * 32) >> 8;
-        for (i2 = 0; i2 < 4; i2++) {
-            i3 = (highlightCells[(i2 * 2) + 0] * 34) + (i5 + 5);
-            i9 = (((i5 + 5) + (highlightCells[(i2 * 2) + 1] * 34)) - 7) - 1;
-            i10 = (i2 * 34) + (((i8 + 5) + 27) + 3);
-            for (i4 = i3 + i6; i4 < i9; i4 += 9) {
-                g.drawLine(i10 - 1, i4, i10 - 1, i4 + 1);
-            }
-            for (i4 = i9 - i6; i4 > i3; i4 -= 9) {
-                g.drawLine(i10 + 1, i4, i10 + 1, i4 + 1);
-            }
-        }
-        for (i2 = 0; i2 < 4; i2++) {
-            i3 = (highlightCells[((i2 * 2) + 8) + 0] * 34) + (i8 + 5);
-            i9 = (((i8 + 5) + (highlightCells[((i2 * 2) + 8) + 1] * 34)) - 7) - 1;
-            i10 = (i2 * 34) + (((i5 + 5) + 27) + 3);
-            for (i4 = i3 + i6; i4 < i9; i4 += 9) {
-                g.drawLine(i4, i10 + 1, i4 + 1, i10 + 1);
-            }
-            for (i4 = i9 - i6; i4 > i3; i4 -= 9) {
-                g.drawLine(i4, i10 - 1, i4 + 1, i10 - 1);
-            }
-        }
-        for (i4 = 0; i4 < 25; i4++) {
-            i2 = grid[(i4 * 3) + 0];
-            i6 = grid[(i4 * 3) + 2];
-            if (i2 != 0) {
-                i3 = (i8 + 8) + ((i4 % 5) * 34);
-                i9 = (((i5 + 29) + ((i4 / 5) * 34)) - buildingSprites[i2 - 1].getHeight()) + 0;
-                g.setClip(i3, i9, buildingSprites[i2 - 1].getWidth() / 4, buildingSprites[i2 - 1].getHeight());
-                g.drawImage(buildingSprites[i2 - 1], i3 - ((buildingSprites[i2 - 1].getWidth() / 4) * i6), i9, 20);
-            }
-        }
-        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        if (phase == 1 && placementResultTimer < 0) {
-            Image image2 = null;
-            if (cursorCol >= 0) {
-                i6 = (i8 + 8) + (cursorCol * 34);
-                i2 = i5 + 29;
-                i4 = cursorRow * 34;
-            } else {
-                i6 = (i8 - 37) + 5;
-                i2 = i5 + 140;
-                i4 = 21;
-            }
-            i4 += i2;
-            if (placementInProgress) {
-                i3 = placeAnimTimer - 2250;
-                if (i3 > 0 && cursorCol >= 0) {
-                    i6 += (i3 * 9) / 750;
-                    i4 += (i3 * -9) / 750;
-                }
-                if (cursorCol >= 0) {
-                    if (targetCellEmpty) {
-                        i2 = 6;
-                    } else {
-                        i3 = placeAnimTimer - 1500;
-                        i2 = 4;
-                    }
-                    i2 = 5 - ((i2 * i3) / 750);
-                    if (i3 >= 0 && i3 < 750) {
-                        g.setClip(i6 - 10, i4 - 31, tileEffectFrames.getWidth() / 6, tileEffectFrames.getHeight());
-                        i10 = i4;
-                        i11 = i6;
-                        i6 = (i6 - 10) - (i2 * (tileEffectFrames.getWidth() / 6));
-                        image2 = tileEffectFrames;
-                        i2 = i4;
-                        i4 = -31;
-                    }
-                } else {
-                    if (i3 >= 0 && i3 < 750) {
-                        i2 = 5 - ((i3 * 6) / 750);
-                        g.setClip(i6 - 8, i4 - 24, dustEffectFrames.getWidth() / 6, dustEffectFrames.getHeight());
-                        i10 = i4;
-                        i11 = i6;
-                        i6 = (i6 - 8) - (i2 * (dustEffectFrames.getWidth() / 6));
-                        image2 = dustEffectFrames;
-                        i2 = i4;
-                        i4 = -24;
-                    }
-                }
-            } else {
-                i2 = i6 + 9;
-                i6 = i4 - 9;
-                if (placeDelay >= 0) {
-                    i3 = i2 + ((placeDelay * 20) / 700);
-                    i2 = placeDelay * -20;
-                    i4 = 700;
-                } else {
-                    i4 = placeTimer - 1000;
-                    if (i4 > 0) {
-                        i4 = -i4;
-                    }
-                    i4 += 1000;
-                    i3 = ((i4 * -3) / 1001) + i2;
-                    i2 = i4 * 3;
-                    i4 = 1001;
-                }
-                i4 = (i2 / i4) + i6;
-                if (slideTimer > 0) {
-                    i3 += (slideX * slideTimer) / 150;
-                    i4 += (slideY * slideTimer) / 150;
-                }
-                if (placeDelay < 0) {
-                    g.setClip(i3 - 2, i4 - 27, buildingSprites[4].getWidth() / 5, buildingSprites[4].getHeight());
-                    i6 = (i3 - 2) - ((buildingSprites[4].getWidth() / 5) << 2);
-                    i10 = i4;
-                    i11 = i3;
-                    image2 = buildingSprites[4];
-                    i2 = i4;
-                    i4 = -27;
-                } else {
-                    i6 = i3;
-                }
-            }
-            if (image2 != null) {
-                g.drawImage(image2, i6, i4 + i2, 20);
-                i4 = i10;
-                i6 = i11;
-            }
-            if (!placementInProgress || cursorCol >= 0) {
-                i4 = (i4 - buildingSprites[pieceType - 1].getHeight()) + 0;
-                g.setClip(i6, i4, buildingSprites[pieceType - 1].getWidth() / 4, buildingSprites[pieceType - 1].getHeight());
-                g.drawImage(buildingSprites[pieceType - 1], i6 - (pieceVariant * (buildingSprites[pieceType - 1].getWidth() / 4)), i4, 20);
-            }
-            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-        }
-        i4 = i8 - 39;
-        i3 = i5 + 0;
-        if (phase == 0) {
-            i = placementResultTimer >= 0 ? ((i * (-(i4 + 56))) / 750) + i4 : i4;
-            g.setColor(-8556946);
-            g.fillRect(i, i3, 28, 100);
-            g.setColor(-1);
-            g.fillRect(i + 1, i3 + 1, 26, 98);
-            for (i6 = 0; i6 < 4; i6++) {
-                i4 = i + 3;
-                i9 = (i6 * 24) + (i3 + 3);
-                g.setColor(-5460820);
-                if (i6 == selectedBuilding && blinkTimer < 250) {
-                    g.setColor(-89856);
-                }
-                g.fillRect(i4, i9, 22, 22);
-                if (i6 <= unlockedSpecialTier) {
-                    g.setClip(i4 - 5, i9 + 12, 10, statusIcons.getHeight());
-                    g.drawImage(statusIcons, (((i4 - 5) - 28) - 14) - 28, i9 + 12, 20);
-                }
-                if (i6 <= unlockedBuildingTier) {
-                    i2 = i4 + 3;
-                    i4 = i9 + 19;
-                    if (i6 == selectedBuilding) {
-                        if (launchDelay < 250) {
-                            i2 += 2;
-                            i4 -= 2;
-                        }
-                        g.setClip(i2 - 2, i4 - 27, buildingSprites[4].getWidth() / 5, buildingSprites[4].getHeight());
-                        g.drawImage(buildingSprites[4], (i2 - 2) - ((buildingSprites[4].getWidth() / 5) * i6), i4 - 27, 20);
-                    }
-                    i4 = (i4 - buildingSprites[i6].getHeight()) + 0;
-                    g.setClip(i2, i4, buildingSprites[i6].getWidth() / 4, buildingSprites[i6].getHeight());
-                    g.drawImage(buildingSprites[i6], i2 - ((buildingSprites[i6].getWidth() / 4) * 3), i4, 20);
-                }
-                g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
-            }
-        }
+
+        paintSkyBackground(g);
+        paintTopHUD(g);
+        paintBottomHintPanel(g);
+
+        int gridOriginX = (((((GameMIDlet.screenWidth - 28) - 11) - 173) >> 1) + 28) + 11;
+        int gridOriginY = (((((GameMIDlet.screenHeight - 60) - 56) - 173) + 1) >> 1) + 60;
+
+        paintCityGrid(g, gridOriginX, gridOriginY);
+        paintPlacedBuildings(g, gridOriginX, gridOriginY);
+        paintPlacementPiece(g, gridOriginX, gridOriginY);
+        paintBuildingSelector(g, gridOriginX, gridOriginY);
+
         if (modalActive) {
             House.paintTutorialModal(g);
         }
         needsRepaint = false;
+    }
+
+    private static void paintSkyBackground(Graphics g) {
+        int bottomY = GameMIDlet.screenHeight - 55;
+        for (int y = 58; y <= bottomY; y++) {
+            int r = skyGradient[0] + ((skyGradient[3] * (y - 58)) / (bottomY - 58));
+            int gr = skyGradient[1] + ((skyGradient[4] * (y - 58)) / (bottomY - 58));
+            int b = skyGradient[2] + ((skyGradient[5] * (y - 58)) / (bottomY - 58));
+            g.setColor(r, gr, b);
+            g.drawLine(0, y, GameMIDlet.screenWidth, y);
+        }
+    }
+
+    private static void paintTopHUD(Graphics g) {
+        int curY = 0;
+        for (int band = 0; band < 18; band++) {
+            g.setColor(bandColors[band]);
+            if (band == 2) {
+                g.fillRect(3, curY, 56, 40);
+            } else if (band == 3) {
+                g.fillRect(59, curY, (GameMIDlet.screenWidth - 6) - 56, 40);
+                curY += 40;
+            } else {
+                g.drawLine(3, curY, GameMIDlet.screenWidth - 3, curY);
+                curY++;
+            }
+        }
+
+        int maxGaugeWidth = GameMIDlet.screenWidth - 6;
+        int gaugeFillWidth;
+        if (level < levelThresholds.length - 1) {
+            int lvlIdx = level;
+            while (lvlIdx < levelThresholds.length - 2 && population + populationPending > levelThresholds[lvlIdx + 1]) {
+                lvlIdx++;
+            }
+            int currentThreshold = levelThresholds[lvlIdx];
+            int nextThreshold = levelThresholds[lvlIdx + 1];
+            gaugeFillWidth = (maxGaugeWidth * ((population + populationPending) - currentThreshold)) / (nextThreshold - currentThreshold);
+        } else {
+            gaugeFillWidth = maxGaugeWidth;
+        }
+
+        g.setColor(-89856);
+        g.fillRect(3, 43, gaugeFillWidth, 6);
+        g.setColor(-130816);
+        g.fillRect(3, 49, gaugeFillWidth, 3);
+
+        g.setClip(0, 0, 3, populationGauge.getHeight());
+        g.drawImage(populationGauge, 0, 0, 20);
+        g.setClip(GameMIDlet.screenWidth - 3, 0, 3, populationGauge.getHeight());
+        g.drawImage(populationGauge, (GameMIDlet.screenWidth - 3) - 3, 0, 20);
+
+        int iconOffsetX = 0;
+        int levelBoxColor = -15922164;
+        if (level == 0) {
+            iconOffsetX = -42;
+            levelBoxColor = -4602071;
+        }
+
+        g.setClip(8, 12, 14, statusIcons.getHeight());
+        g.drawImage(statusIcons, iconOffsetX + 8, 12, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+
+        g.setColor(-5858534);
+        g.drawLine(24, 16, 53, 16);
+        g.setColor(levelBoxColor);
+        g.fillRect(24, 17, 30, 10);
+        g.setColor(-1971082);
+        g.drawLine(24, 27, 53, 27);
+
+        if (level > 0) {
+            drawBitmapNumber(g, digitFont, level + "<20", 54, 18, 7, 6, 1, 0);
+        }
+
+        g.setClip(76, 12, 14, statusIcons.getHeight());
+        g.drawImage(statusIcons, 62, 12, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+
+        if (populationFlashTimer >= 0) {
+            drawBitmapNumber(g, digitSheetCurrent, ":", 96, 16, 7, 0, 0, 0);
+        }
+
+        for (int barIdx = 0; barIdx < 6; barIdx++) {
+            int barOffset = (barIdx == 5) ? 3 : (5 - barIdx <= populationFlashCount ? flashColorIndex : 0);
+            g.setClip((barIdx * 14) + 100, 10, 14, 25);
+            g.drawImage(hudBarSprite, ((barIdx - barOffset) * 14) + 100, 10, 20);
+        }
+
+        Image popDigitSheet = digitSheetA;
+        if (populationFlashCount == 0 && populationFlashTimer >= 0 && populationFlashTimer % 400 < 200) {
+            popDigitSheet = digitSheetCurrent;
+        }
+        drawBitmapNumber(g, popDigitSheet, String.valueOf(population), 167, 16, 7, 14, 5, populationFlashCount);
+
+        int currentCellType = (cursorCol >= 0) ? grid[(((cursorRow * 5) + cursorCol) * 3) + 0] : 0;
+        int borderColor;
+        int fillColor;
+        int iconXOffset;
+
+        if (phase == 0 || placementResultTimer >= 0 || placementInProgress) {
+            borderColor = -3686478;
+            fillColor = -5399421;
+            iconXOffset = -56;
+        } else {
+            borderColor = -1907998;
+            fillColor = -15922164;
+            iconXOffset = -28;
+        }
+
+        int boxStartX = GameMIDlet.screenWidth - 60;
+        g.setClip(boxStartX, 12, 14, statusIcons.getHeight());
+        g.drawImage(statusIcons, iconXOffset + boxStartX, 12, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+
+        int boxInnerX = boxStartX + 20;
+        g.setColor(borderColor);
+        g.fillRect(boxInnerX, 8, 30, 12);
+        g.setColor(fillColor);
+        g.fillRect(boxInnerX + 1, 9, 28, 10);
+
+        if (currentCellType == 0) {
+            borderColor = -3686478;
+            fillColor = -5399421;
+        }
+        g.setColor(borderColor);
+        g.fillRect(boxInnerX, 21, 30, 12);
+        g.setColor(fillColor);
+        g.fillRect(boxInnerX + 1, 22, 28, 10);
+
+        if (phase == 1 && placementResultTimer < 0 && !placementInProgress) {
+            g.setColor(buildingColors[(pieceType + 4) - 1]);
+            g.fillRect(boxInnerX + 1, 9, 7, 10);
+            g.setColor(buildingColors[pieceType - 1]);
+            g.fillRect(boxInnerX + 1, 9, 6, 9);
+            drawBitmapNumber(g, digitFont, String.valueOf(pieceValue), boxInnerX + 26, 9, 7, 6, 1, 0);
+
+            if (currentCellType > 0) {
+                g.setColor(buildingColors[(currentCellType + 4) - 1]);
+                g.fillRect(boxInnerX + 1, 22, 7, 10);
+                g.setColor(buildingColors[currentCellType - 1]);
+                g.fillRect(boxInnerX + 1, 22, 6, 9);
+                int cellValue = grid[(((cursorRow * 5) + cursorCol) * 3) + 1];
+                drawBitmapNumber(g, digitFont, String.valueOf(cellValue), boxInnerX + 26, 22, 7, 6, 1, 0);
+            }
+        }
+    }
+
+    private static void paintBottomHintPanel(Graphics g) {
+        int panelY = GameMIDlet.screenHeight - 56;
+        g.setColor(-15463412);
+        g.drawLine(3, panelY, GameMIDlet.screenWidth - 3, panelY);
+        g.setColor(-8556946);
+        g.drawLine(3, panelY + 1, GameMIDlet.screenWidth - 3, panelY + 1);
+        g.setColor(-1318431);
+        g.drawLine(3, panelY + 2, GameMIDlet.screenWidth - 3, panelY + 2);
+        g.setColor(-1);
+        g.fillRect(3, panelY + 3, GameMIDlet.screenWidth - 6, 51);
+        g.setColor(-1318431);
+        g.drawLine(3, (panelY + 56) - 2, GameMIDlet.screenWidth - 3, (panelY + 56) - 2);
+        g.setColor(-8556946);
+        g.drawLine(3, (panelY + 56) - 1, GameMIDlet.screenWidth - 3, (panelY + 56) - 1);
+
+        g.setClip(0, panelY, 3, populationGauge.getHeight());
+        g.drawImage(populationGauge, -6, panelY, 20);
+        g.setClip(GameMIDlet.screenWidth - 3, panelY, 3, populationGauge.getHeight());
+        g.drawImage(populationGauge, GameMIDlet.screenWidth - 12, panelY, 20);
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+
+        int textY = panelY + 4;
+        g.setColor(-16777216);
+        g.setFont(font);
+
+        int isRtl = (Storage.getSetting(4) == 1) ? 1 : 0;
+        int textX = (isRtl == 1) ? (GameMIDlet.screenWidth - 10) : 10;
+        int anchor = (isRtl == 1) ? 24 : 20;
+
+        for (int line = hintScroll; line < hintScroll + hintLinesVisible && line < hintLines.length; line++) {
+            g.drawString(hintLines[line], textX, textY, anchor);
+            textY += font.getHeight();
+        }
+    }
+
+    private static void paintCityGrid(Graphics g, int gridOriginX, int gridOriginY) {
+        int animOffset = 0;
+        if (placementResultTimer >= 0) {
+            animOffset = placementResultTimer - 750;
+            if (animOffset > 0) {
+                animOffset = -animOffset;
+            }
+            animOffset += 750;
+        }
+
+        if (phase == 1) {
+            int iconSlide = 0;
+            if (placementResultTimer >= 0) {
+                iconSlide = ((-((gridOriginX - 37) + (buildIcon.getWidth() << 1))) * animOffset) / 750;
+            }
+            g.drawImage(buildIcon, iconSlide + (gridOriginX - 37), gridOriginY + 140, 20);
+        }
+
+        g.setColor(-1);
+        g.fillRect(gridOriginX, gridOriginY, 173, 173);
+        g.setColor(-12566464);
+        g.fillRect(gridOriginX + 1, gridOriginY + 1, 171, 171);
+
+        int targetTier = (phase == 1) ? (pieceType - 1) : selectedBuilding;
+
+        int c1R = (cellPalette[targetTier] >> 16) & 255;
+        int c1G = (cellPalette[targetTier] >> 8) & 255;
+        int c1B = cellPalette[targetTier] & 255;
+
+        int c2R = (cellPalette[targetTier + 4] >> 16) & 255;
+        int c2G = (cellPalette[targetTier + 4] >> 8) & 255;
+        int c2B = cellPalette[targetTier + 4] & 255;
+
+        int blink = blinkTimer800 - 400;
+        if (blink > 0) {
+            blink = -blink;
+        }
+        blink += 400;
+
+        int blendedColor = (((c1R + (((c2R - c1R) * blink) / 400)) << 16)
+                | ((c1G + (((c2G - c1G) * blink) / 400)) << 8))
+                | (((blink * (c2B - c1B)) / 400) + c1B);
+
+        for (int r = 0; r < 5; r++) {
+            for (int c = 0; c < 5; c++) {
+                int colSec = tierColorsSecondary[unlockedBuildingTier];
+                int colPri = tierColorsPrimary[unlockedBuildingTier];
+                if (cellLevels[(r * 5) + c] >= targetTier && !placementInProgress && placementResultTimer < 0
+                        && selectedBuilding <= unlockedBuildingTier && (placeDelay < 0 || phase != 1)) {
+                    colPri = blendedColor;
+                    colSec = blendedColor;
+                }
+                g.setColor(tierColorsPrimary[unlockedBuildingTier]);
+                g.fillRect((gridOriginX + 5) + (c * 34), (gridOriginY + 5) + (r * 34), 27, 27);
+                g.setColor(colSec);
+                g.fillRect(((gridOriginX + 5) + 1) + (c * 34), ((gridOriginY + 5) + 1) + (r * 34), 25, 25);
+                g.setColor(colPri);
+                g.fillRect(((gridOriginX + 5) + 2) + (c * 34), ((gridOriginY + 5) + 2) + (r * 34), 23, 23);
+                g.setColor(tierColorsSecondary[unlockedBuildingTier]);
+                g.fillRect(((gridOriginX + 5) + 3) + (c * 34), ((gridOriginY + 5) + 3) + (r * 34), 21, 21);
+            }
+        }
+
+        g.setStrokeStyle(1);
+        g.setColor(-7171438);
+        for (int i = 0; i < 4; i++) {
+            int lineX = (((gridOriginX + 5) + 27) + 3) + (i * 34);
+            g.drawLine(lineX, (gridOriginY + 5) + 1, lineX, ((gridOriginY + 173) - 5) - 2);
+        }
+        for (int i = 0; i < 4; i++) {
+            int lineY = (((gridOriginY + 5) + 27) + 3) + (i * 34);
+            g.drawLine((gridOriginX + 5) + 1, lineY, ((gridOriginX + 173) - 5) - 2, lineY);
+        }
+
+        g.setStrokeStyle(0);
+        g.setColor(-13108);
+        int animTickShift = (animTick * 32) >> 8;
+        for (int i = 0; i < 4; i++) {
+            int startY = (highlightCells[(i * 2) + 0] * 34) + (gridOriginY + 5);
+            int endY = (((gridOriginY + 5) + (highlightCells[(i * 2) + 1] * 34)) - 7) - 1;
+            int lineX = (i * 34) + (((gridOriginX + 5) + 27) + 3);
+            for (int segY = startY + animTickShift; segY < endY; segY += 9) {
+                g.drawLine(lineX - 1, segY, lineX - 1, segY + 1);
+            }
+            for (int segY = endY - animTickShift; segY > startY; segY -= 9) {
+                g.drawLine(lineX + 1, segY, lineX + 1, segY + 1);
+            }
+        }
+        for (int i = 0; i < 4; i++) {
+            int startX = (highlightCells[((i * 2) + 8) + 0] * 34) + (gridOriginX + 5);
+            int endX = (((gridOriginX + 5) + (highlightCells[((i * 2) + 8) + 1] * 34)) - 7) - 1;
+            int lineY = (i * 34) + (((gridOriginY + 5) + 27) + 3);
+            for (int segX = startX + animTickShift; segX < endX; segX += 9) {
+                g.drawLine(segX, lineY + 1, segX + 1, lineY + 1);
+            }
+            for (int segX = endX - animTickShift; segX > startX; segX -= 9) {
+                g.drawLine(segX, lineY - 1, segX + 1, lineY - 1);
+            }
+        }
+    }
+
+    private static void paintPlacedBuildings(Graphics g, int gridOriginX, int gridOriginY) {
+        for (int cellIdx = 0; cellIdx < 25; cellIdx++) {
+            int bType = grid[(cellIdx * 3) + 0];
+            int bVariant = grid[(cellIdx * 3) + 2];
+            if (bType != 0) {
+                int frameWidth = buildingSprites[bType - 1].getWidth() / 4;
+                int frameHeight = buildingSprites[bType - 1].getHeight();
+                int drawX = (gridOriginX + 8) + ((cellIdx % 5) * 34);
+                int drawY = ((gridOriginY + 29) + ((cellIdx / 5) * 34)) - frameHeight;
+                g.setClip(drawX, drawY, frameWidth, frameHeight);
+                g.drawImage(buildingSprites[bType - 1], drawX - (frameWidth * bVariant), drawY, 20);
+            }
+        }
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+    }
+
+    private static void paintPlacementPiece(Graphics g, int gridOriginX, int gridOriginY) {
+        if (phase != 1 || placementResultTimer >= 0) {
+            return;
+        }
+
+        Image effectImage = null;
+        int drawX;
+        int drawY;
+        if (cursorCol >= 0) {
+            drawX = (gridOriginX + 8) + (cursorCol * 34);
+            drawY = gridOriginY + 29 + (cursorRow * 34);
+        } else {
+            drawX = (gridOriginX - 37) + 5;
+            drawY = gridOriginY + 140 + 21;
+        }
+
+        int effectDrawX = drawX;
+        int effectDrawY = drawY;
+
+        if (placementInProgress) {
+            int animProgress = placeAnimTimer - 2250;
+            if (animProgress > 0 && cursorCol >= 0) {
+                drawX += (animProgress * 9) / 750;
+                drawY += (animProgress * -9) / 750;
+            }
+            if (cursorCol >= 0) {
+                int frameCount = targetCellEmpty ? 6 : 4;
+                int timer = targetCellEmpty ? animProgress : (placeAnimTimer - 1500);
+                int frameIdx = 5 - ((frameCount * timer) / 750);
+                if (timer >= 0 && timer < 750) {
+                    int frameWidth = tileEffectFrames.getWidth() / 6;
+                    int frameHeight = tileEffectFrames.getHeight();
+                    g.setClip(drawX - 10, drawY - 31, frameWidth, frameHeight);
+                    effectImage = tileEffectFrames;
+                    effectDrawX = (drawX - 10) - (frameIdx * frameWidth);
+                    effectDrawY = drawY - 31;
+                }
+            } else {
+                int timer = animProgress;
+                if (timer >= 0 && timer < 750) {
+                    int frameIdx = 5 - ((timer * 6) / 750);
+                    int frameWidth = dustEffectFrames.getWidth() / 6;
+                    int frameHeight = dustEffectFrames.getHeight();
+                    g.setClip(drawX - 8, drawY - 24, frameWidth, frameHeight);
+                    effectImage = dustEffectFrames;
+                    effectDrawX = (drawX - 8) - (frameIdx * frameWidth);
+                    effectDrawY = drawY - 24;
+                }
+            }
+        } else {
+            int targetX = drawX + 9;
+            int targetY = drawY - 9;
+            int offsetX;
+            int offsetY;
+            if (placeDelay >= 0) {
+                offsetX = targetX + ((placeDelay * 20) / 700);
+                offsetY = ((placeDelay * -20) / 700) + targetY;
+            } else {
+                int timer = placeTimer - 1000;
+                if (timer > 0) {
+                    timer = -timer;
+                }
+                timer += 1000;
+                offsetX = ((timer * -3) / 1001) + targetX;
+                offsetY = ((timer * 3) / 1001) + targetY;
+            }
+            if (slideTimer > 0) {
+                offsetX += (slideX * slideTimer) / 150;
+                offsetY += (slideY * slideTimer) / 150;
+            }
+            if (placeDelay < 0) {
+                int shadowWidth = buildingSprites[4].getWidth() / 5;
+                int shadowHeight = buildingSprites[4].getHeight();
+                g.setClip(offsetX - 2, offsetY - 27, shadowWidth, shadowHeight);
+                effectImage = buildingSprites[4];
+                effectDrawX = (offsetX - 2) - (shadowWidth * 4);
+                effectDrawY = offsetY - 27;
+            }
+            drawX = offsetX;
+            drawY = offsetY;
+        }
+
+        if (effectImage != null) {
+            g.drawImage(effectImage, effectDrawX, effectDrawY, 20);
+        }
+
+        if (!placementInProgress || cursorCol >= 0) {
+            int pieceWidth = buildingSprites[pieceType - 1].getWidth() / 4;
+            int pieceHeight = buildingSprites[pieceType - 1].getHeight();
+            int bDrawY = drawY - pieceHeight;
+            g.setClip(drawX, bDrawY, pieceWidth, pieceHeight);
+            g.drawImage(buildingSprites[pieceType - 1], drawX - (pieceVariant * pieceWidth), bDrawY, 20);
+        }
+        g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+    }
+
+    private static void paintBuildingSelector(Graphics g, int gridOriginX, int gridOriginY) {
+        if (phase != 0) {
+            return;
+        }
+
+        int panelX = gridOriginX - 39;
+        int panelY = gridOriginY;
+        if (placementResultTimer >= 0) {
+            int animProgress = placementResultTimer - 750;
+            if (animProgress > 0) {
+                animProgress = -animProgress;
+            }
+            animProgress += 750;
+            panelX = ((animProgress * (-(panelX + 56))) / 750) + panelX;
+        }
+
+        g.setColor(-8556946);
+        g.fillRect(panelX, panelY, 28, 100);
+        g.setColor(-1);
+        g.fillRect(panelX + 1, panelY + 1, 26, 98);
+
+        for (int tier = 0; tier < 4; tier++) {
+            int slotX = panelX + 3;
+            int slotY = (tier * 24) + (panelY + 3);
+            g.setColor(-5460820);
+            if (tier == selectedBuilding && blinkTimer < 250) {
+                g.setColor(-89856);
+            }
+            g.fillRect(slotX, slotY, 22, 22);
+
+            if (tier <= unlockedSpecialTier) {
+                g.setClip(slotX - 5, slotY + 12, 10, statusIcons.getHeight());
+                g.drawImage(statusIcons, (((slotX - 5) - 28) - 14) - 28, slotY + 12, 20);
+            }
+
+            if (tier <= unlockedBuildingTier) {
+                int bX = slotX + 3;
+                int bY = slotY + 19;
+                if (tier == selectedBuilding) {
+                    if (launchDelay < 250) {
+                        bX += 2;
+                        bY -= 2;
+                    }
+                    int shadowWidth = buildingSprites[4].getWidth() / 5;
+                    int shadowHeight = buildingSprites[4].getHeight();
+                    g.setClip(bX - 2, bY - 27, shadowWidth, shadowHeight);
+                    g.drawImage(buildingSprites[4], (bX - 2) - (shadowWidth * tier), bY - 27, 20);
+                }
+                int spriteWidth = buildingSprites[tier].getWidth() / 4;
+                int spriteHeight = buildingSprites[tier].getHeight();
+                int drawSpriteY = bY - spriteHeight;
+                g.setClip(bX, drawSpriteY, spriteWidth, spriteHeight);
+                g.drawImage(buildingSprites[tier], bX - (spriteWidth * 3), drawSpriteY, 20);
+            }
+            g.setClip(0, 0, GameMIDlet.screenWidth, GameMIDlet.screenHeight);
+        }
     }
 
     private static void drawBitmapNumber(Graphics g, Image fontImage, String numberStr, int x, int y, int digitWidth, int digitHeight, int charSpacing, int anchor) {
@@ -661,10 +733,6 @@ public final class CityMode {
     }
 
     public static void update(int deltaMs, int totalTimeMs) {
-        int i3 = 0;
-        int i4;
-        String message = null;
-        String[] strArr;
         if (slideTimer >= 0) {
             slideTimer -= deltaMs;
         }
@@ -686,6 +754,68 @@ public final class CityMode {
         }
         blinkTimer800 += deltaMs;
         blinkTimer800 %= 800;
+
+        checkCityTutorialPrompts();
+
+        if (launchDelay >= 0) {
+            launchDelay -= deltaMs;
+            if (launchDelay < 0) {
+                towerGameActive = true;
+                clearInputState();
+            }
+        }
+        if (phase == 1) {
+            if (placeDelay >= 0) {
+                placeDelay -= deltaMs;
+            } else {
+                placeTimer += deltaMs;
+                placeTimer %= 2000;
+            }
+        }
+        if (placementResultTimer >= 0) {
+            placementResultTimer -= deltaMs;
+            if (phase == 1 && placementResultTimer < 750) {
+                phase = 0;
+            }
+        }
+        if (placementInProgress && !modalActive) {
+            boolean active = cursorActive;
+            placeAnimTimer -= deltaMs;
+            if (cursorCol >= 0) {
+                populationPending = 0;
+                if (placeAnimTimer > 0) {
+                    populationPending = ((populationTarget - population) * placeAnimTimer) / 3000;
+                }
+            }
+            if (placeAnimTimer < 0 && cursorActive && cursorCol >= 0) {
+                grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = pieceType;
+                grid[(((cursorRow * 5) + cursorCol) * 3) + 1] = pieceValue;
+                grid[(((cursorRow * 5) + cursorCol) * 3) + 2] = pieceVariant;
+                CityMode.saveState();
+                updateUnlocks();
+                active = false;
+            } else if (placeAnimTimer < 0) {
+                if (cursorCol >= 0) {
+                    highScorePending = true;
+                    recalculateSynergies();
+                }
+                if (!tutorialShown[4]) {
+                    House.showPrompt(Resources.getString(40), null, null);
+                    tutorialShown[4] = true;
+                    modalActive = true;
+                }
+                placementResultTimer = 1500;
+                placementInProgress = false;
+                active = true;
+            }
+            cursorActive = active;
+        }
+
+        handleCityInput();
+        updateCityHintText(totalTimeMs);
+    }
+
+    private static void checkCityTutorialPrompts() {
         if (!(modalActive || tutorialShown[1])) {
             House.showPrompt(Resources.getString(37), null, null);
             tutorialShown[1] = true;
@@ -697,26 +827,27 @@ public final class CityMode {
             modalActive = true;
         }
         if (!(modalActive || tutorialShown[5] || level != 1)) {
-            House.showPrompt(Resources.getString(41, new String[]{new StringBuffer().append("").append(levelThresholds[level]).toString()}), null, null);
+            House.showPrompt(Resources.getString(41, new String[]{String.valueOf(levelThresholds[level])}), null, null);
             tutorialShown[5] = true;
             modalActive = true;
         }
         if (!modalActive && !tutorialShown[level + 4] && level > 1 && level < 20) {
+            int promptResId;
             switch (level) {
                 case 5:
-                    i3 = 58;
+                    promptResId = 58;
                     break;
                 case 17:
-                    i3 = 59;
+                    promptResId = 59;
                     break;
                 case 19:
-                    i3 = 60;
+                    promptResId = 60;
                     break;
                 default:
-                    i3 = 43;
+                    promptResId = 43;
                     break;
             }
-            House.showPrompt(Resources.getString(i3, new String[]{new StringBuffer().append("").append(levelThresholds[level]).toString()}), null, null);
+            House.showPrompt(Resources.getString(promptResId, new String[]{String.valueOf(levelThresholds[level])}), null, null);
             tutorialShown[level + 4] = true;
             modalActive = true;
         }
@@ -763,63 +894,13 @@ public final class CityMode {
             modalActive = true;
         }
         if (!(modalActive || tutorialShown[45] || !tutorialShown[44])) {
-            House.showPrompt(Resources.getString(54, new String[]{new StringBuffer().append("").append(levelThresholds[20]).toString()}), null, null);
+            House.showPrompt(Resources.getString(54, new String[]{String.valueOf(levelThresholds[20])}), null, null);
             tutorialShown[45] = true;
             modalActive = true;
         }
-        if (launchDelay >= 0) {
-            launchDelay -= deltaMs;
-            if (launchDelay < 0) {
-                towerGameActive = true;
-                clearInputState();
-            }
-        }
-        if (phase == 1) {
-            if (placeDelay >= 0) {
-                placeDelay -= deltaMs;
-            } else {
-                placeTimer += deltaMs;
-                placeTimer %= 2000;
-            }
-        }
-        if (placementResultTimer >= 0) {
-            placementResultTimer -= deltaMs;
-            if (phase == 1 && placementResultTimer < 750) {
-                phase = 0;
-            }
-        }
-        if (placementInProgress && !modalActive) {
-            boolean z = cursorActive;
-            placeAnimTimer -= deltaMs;
-            if (cursorCol >= 0) {
-                populationPending = 0;
-                if (placeAnimTimer > 0) {
-                    populationPending = ((populationTarget - population) * placeAnimTimer) / 3000;
-                }
-            }
-            if (placeAnimTimer < 0 && cursorActive && cursorCol >= 0) {
-                grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = pieceType;
-                grid[(((cursorRow * 5) + cursorCol) * 3) + 1] = pieceValue;
-                grid[(((cursorRow * 5) + cursorCol) * 3) + 2] = pieceVariant;
-                CityMode.saveState();
-                updateUnlocks();
-                z = false;
-            } else if (placeAnimTimer < 0) {
-                if (cursorCol >= 0) {
-                    highScorePending = true;
-                    recalculateSynergies();
-                }
-                if (!tutorialShown[4]) {
-                    House.showPrompt(Resources.getString(40), null, null);
-                    tutorialShown[4] = true;
-                    modalActive = true;
-                }
-                placementResultTimer = 1500;
-                placementInProgress = false;
-                z = true;
-            }
-            cursorActive = z;
-        }
+    }
+
+    private static void handleCityInput() {
         if (modalActive) {
             if (keyUp) {
                 House.handleModalAction(-1);
@@ -902,100 +983,78 @@ public final class CityMode {
                     population += pieceValue;
                     populationPending = populationTarget - population;
                     digitSheetCurrent = digitSheetA;
-                    i4 = GameMIDlet.screenWidth - 20;
+                    int maxHintWidth = GameMIDlet.screenWidth - 20;
+                    String message;
                     if (population > populationTarget) {
-                        message = Resources.getString(67, new String[]{new StringBuffer().append("").append(population - populationTarget).toString()});
+                        message = Resources.getString(67, new String[]{String.valueOf(population - populationTarget)});
                     } else if (population < populationTarget) {
-                        message = Resources.getString(69, new String[]{new StringBuffer().append("").append(populationTarget - population).toString()});
+                        message = Resources.getString(69, new String[]{String.valueOf(populationTarget - population)});
                         digitSheetCurrent = digitSheetB;
-                        populationFlashCount = 0;
-                        if (population / 10000 != populationTarget / 10000) {
-                            i3 = 5;
-                        } else if (population / 1000 != populationTarget / 1000) {
-                            i3 = 4;
-                        } else if (population / 100 != populationTarget / 100) {
-                            i3 = 3;
-                        } else if (population / 10 == populationTarget / 10) {
-                            i3 = 2;
-                        } else {
-                            if (population != populationTarget) {
-                                i3 = 1;
-                            }
-                            if (populationFlashCount > 0) {
-                                populationFlashTimer = 300;
-                            }
-                            targetCellEmpty = grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0;
-                            grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = 0;
-                        }
-                        populationFlashCount = i3;
-                        if (populationFlashCount > 0) {
-                            populationFlashTimer = 300;
-                        }
-                        if (grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0) {
-                        }
-                        targetCellEmpty = grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0;
-                        grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = 0;
                     } else {
                         message = Resources.getString(68);
                     }
-                    hintCustom = House.wrapText(message, font, i4);
-                    populationFlashCount = 0;
+                    hintCustom = House.wrapText(message, font, maxHintWidth);
+
                     if (population / 10000 != populationTarget / 10000) {
-                        i3 = 5;
+                        populationFlashCount = 5;
                     } else if (population / 1000 != populationTarget / 1000) {
-                        i3 = 4;
+                        populationFlashCount = 4;
                     } else if (population / 100 != populationTarget / 100) {
-                        i3 = 3;
-                    } else if (population / 10 == populationTarget / 10) {
-                        if (population != populationTarget) {
-                            i3 = 1;
-                        }
-                        if (populationFlashCount > 0) {
-                            populationFlashTimer = 300;
-                        }
-                        if (grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0) {
-                        }
-                        targetCellEmpty = grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0;
-                        grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = 0;
+                        populationFlashCount = 3;
+                    } else if (population / 10 != populationTarget / 10) {
+                        populationFlashCount = 2;
+                    } else if (population != populationTarget) {
+                        populationFlashCount = 1;
                     } else {
-                        i3 = 2;
+                        populationFlashCount = 0;
                     }
-                    populationFlashCount = i3;
+
                     if (populationFlashCount > 0) {
                         populationFlashTimer = 300;
                     }
-                    if (grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0) {
-                    }
-                    targetCellEmpty = grid[(((cursorRow * 5) + cursorCol) * 3) + 0] == 0;
-                    grid[(((cursorRow * 5) + cursorCol) * 3) + 0] = 0;
+
+                    int cellIndex = (((cursorRow * 5) + cursorCol) * 3) + 0;
+                    targetCellEmpty = (grid[cellIndex] == 0);
+                    grid[cellIndex] = 0;
                 }
             }
         }
         clearInputState();
-        Object obj = hintLines;
+    }
+
+    private static void updateCityHintText(int totalTimeMs) {
         if (helpLines == null) {
             helpLines = new String[12][];
         }
+        String[] nextHint;
         if (phase == 0) {
-            strArr = selectedBuilding <= unlockedSpecialTier ? helpLines[selectedBuilding + 4] : selectedBuilding <= unlockedBuildingTier ? helpLines[selectedBuilding] : helpLines[selectedBuilding + 8];
+            nextHint = (selectedBuilding <= unlockedSpecialTier) ? helpLines[selectedBuilding + 4]
+                    : (selectedBuilding <= unlockedBuildingTier) ? helpLines[selectedBuilding]
+                    : helpLines[selectedBuilding + 8];
         } else {
             if (hintCustom == null) {
-                i4 = GameMIDlet.screenWidth - 20;
+                int maxHintWidth = GameMIDlet.screenWidth - 20;
+                String message;
                 if (population > populationTarget) {
-                    message = Resources.getString(67, new String[]{new StringBuffer().append("").append(population - populationTarget).toString()});
+                    message = Resources.getString(67, new String[]{String.valueOf(population - populationTarget)});
                 } else if (population < populationTarget) {
-                    message = Resources.getString(69, new String[]{new StringBuffer().append("").append(populationTarget - population).toString()});
+                    message = Resources.getString(69, new String[]{String.valueOf(populationTarget - population)});
                     digitSheetCurrent = digitSheetB;
                 } else {
                     message = Resources.getString(68);
                 }
-                hintCustom = House.wrapText(message, font, i4);
+                hintCustom = House.wrapText(message, font, maxHintWidth);
             }
-            strArr = cursorCol < 0 ? hintOffGrid : (placementInProgress || placementResultTimer >= 0) ? hintCustom : cellLevels[(cursorRow * 5) + cursorCol] < pieceType + -1 ? hintCellTooLow : hintPlaceable;
+            nextHint = (cursorCol < 0) ? hintOffGrid
+                    : (placementInProgress || placementResultTimer >= 0) ? hintCustom
+                    : (cellLevels[(cursorRow * 5) + cursorCol] < pieceType - 1) ? hintCellTooLow
+                    : hintPlaceable;
         }
-        hintLines = strArr;
+
+        String[] prevHint = hintLines;
+        hintLines = nextHint;
         hintScrollTimer -= totalTimeMs;
-        if (!hintLines.equals(obj)) {
+        if (hintLines != prevHint) {
             hintScrollTimer = 2000;
             hintScroll = 0;
         }
@@ -1329,7 +1388,7 @@ public final class CityMode {
             }
             showTutorialHint(reservedZ);
         } catch (Exception ex) {
-            System.out.println(new StringBuffer().append("Exception in CityMode::loadState(), e:").append(ex.getMessage()).toString());
+            System.out.println("Exception in CityMode::loadState(), e:" + ex.getMessage());
         }
     }
 
@@ -1403,7 +1462,7 @@ public final class CityMode {
             Storage.close();
         } catch (Exception ex) {
             ex.printStackTrace();
-            System.out.println(new StringBuffer().append("Exception in CityMode::saveState(), e:").append(ex.getMessage()).toString());
+            System.out.println("Exception in CityMode::saveState(), e:" + ex.getMessage());
         }
     }
 

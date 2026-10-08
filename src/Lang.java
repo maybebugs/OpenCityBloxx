@@ -29,7 +29,7 @@ public final class Lang {
                     instance = new Lang();
                 }
                 if (langStream == null) {
-                    InputStream inputStream = instance.getClass().getResourceAsStream(new StringBuffer().append("/lang.").append(locale).toString());
+                    InputStream inputStream = instance.getClass().getResourceAsStream("/lang." + locale);
                     if (inputStream == null) {
                         int dash = locale.indexOf('-');
                         if (dash > 0) inputStream = instance.getClass().getResourceAsStream("/lang." + locale.substring(0, dash));
@@ -65,7 +65,7 @@ public final class Lang {
                         result = replaceAll(result, "%U", formatArgs[0]);
                     } else {
                         for (int i = 0; i < formatArgs.length; i++) {
-                            result = replaceAll(result, new StringBuffer().append("%").append(i).append("U").toString(), formatArgs[i]);
+                            result = replaceAll(result, "%" + i + "U", formatArgs[i]);
                         }
                     }
                 }
@@ -82,7 +82,7 @@ public final class Lang {
         do {
             idx = text.indexOf(targetKey);
             if (idx >= 0) {
-                text = new StringBuffer().append(text.substring(0, idx)).append(replacement).append(text.substring(targetKey.length() + idx)).toString();
+                text = text.substring(0, idx) + replacement + text.substring(targetKey.length() + idx);
             }
         } while (idx >= 0);
         return text;

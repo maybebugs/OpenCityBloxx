@@ -70,13 +70,13 @@ public final class Resources {
             try {
                 DataInputStream stream;
                 if (streamPos == -2 || offsets[resourceId & 32767] < streamPos
-                        || !archiveName.equals(new StringBuffer().append("r").append(archive).toString())
+                        || !archiveName.equals("r" + archive)
                         || (resourceId & Integer.MIN_VALUE) != 0) {
                     if (archiveStream != null) {
                         archiveStream.close();
                         archiveStream = null;
                     }
-                    archiveName = new StringBuffer().append("r").append(archive).toString();
+                    archiveName = "r" + archive;
                     stream = openStream(resourceId);
                 } else {
                     archiveStream.skipBytes(offsets[resourceId & 32767] - streamPos);
@@ -99,35 +99,33 @@ public final class Resources {
 
     /** Opens a stream positioned at the start of resource 'id'. */
     public static DataInputStream openStream(int resourceId) {
-        DataInputStream stream;
         if (resourceId != -1) {
-            StringBuffer name;
-            int number;
+            String resPath;
             if ((resourceId & Integer.MIN_VALUE) != 0) {
-                try {
-                    name = new StringBuffer().append("");
-                    number = resourceId & 32767;
-                } catch (Exception e) {
-                    stream = null;
-                    streamPos = -2;
-                    return stream;
-                }
+                int number = resourceId & 32767;
+                resPath = String.valueOf(number);
             } else {
-                name = new StringBuffer().append("r");
-                number = (Integer.MAX_VALUE & resourceId) >> 16;
+                int number = (Integer.MAX_VALUE & resourceId) >> 16;
+                resPath = "r" + number;
             }
-            stream = new DataInputStream(instance.getClass().getResourceAsStream(name.append(number).toString()));
-            if ((resourceId & Integer.MIN_VALUE) == 0) {
-                try {
-                    stream.skipBytes(offsets[resourceId & 32767]);
-                } catch (Exception e) {
+            try {
+                InputStream is = instance.getClass().getResourceAsStream(resPath);
+                if (is == null) {
+                    streamPos = -2;
+                    return null;
                 }
+                DataInputStream stream = new DataInputStream(is);
+                if ((resourceId & Integer.MIN_VALUE) == 0) {
+                    stream.skipBytes(offsets[resourceId & 32767]);
+                }
+                return stream;
+            } catch (Exception e) {
+                streamPos = -2;
+                return null;
             }
-        } else {
-            stream = null;
         }
         streamPos = -2;
-        return stream;
+        return null;
     }
 
     /**
@@ -529,7 +527,7 @@ public final class Resources {
     /** Opens file "l<n>" (header: 7 bytes, UTF string, then 153 ints). */
     private static void loadLangFile(int langIndex) {
         try {
-            InputStream is = instance.getClass().getResourceAsStream(new StringBuffer().append("l").append(langIndex).toString());
+            InputStream is = instance.getClass().getResourceAsStream("l" + langIndex);
             if (is != null) {
                 langStream = new DataInputStream(is);
                 langStream.skipBytes(7);
