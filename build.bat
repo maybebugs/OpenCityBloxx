@@ -7,7 +7,8 @@ mkdir out
 dir /s /b src\*.java > sources.txt
 javac -nowarn -encoding UTF-8 -d out @sources.txt || (del sources.txt & exit /b 1)
 del sources.txt
-xcopy /e /i /y /q res\jar_resources out >nul
+rem Bundle assets inside the jar as a fallback; the assets\ folder next to the jar takes priority.
+xcopy /e /i /y /q assets out\assets >nul
 echo Main-Class: Main> manifest.txt
 jar cfm CityBloxx.jar manifest.txt -C out . || exit /b 1
 del manifest.txt
